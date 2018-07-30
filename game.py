@@ -8,17 +8,8 @@ class Sixmok:
 		self.remain = 19 * 19 - self.randomBlockingCnt
 		self.blocking = []
 		self.first = first
-		self.player1 = 0
-		self.player2 = 0
 		self.gibo = []
 		self.win = 0
-
-		if first == 1:
-			player1 = 1
-			player2 = 2
-		elif first == 2:
-			player1 = 2
-			player2 = 1
 
 		for i in range(0, 19):
 			self.board.append([0] * 19)
@@ -133,8 +124,6 @@ class Sixmok:
 		while self.board[x][y] != 0:
 			x = random.randrange(0, 19)
 			y = random.randrange(0, 19)
-		##print("turn ", self.turn)
-		##print("player " + str(player) + " : ", [x,y])
 		return x, y
 
 	def adjacentPolicy(self, player):
@@ -162,19 +151,48 @@ class Sixmok:
 		n = random.randrange(0, len(candidate))
 		return candidate[n][0], candidate[n][1]
 
+	def lastAdjPolicy(self, player):
+		if len(self.gibo) == 0:
+			return self.adjacentPolicy(player)
+
+		candidate = []
+		adj = [[-1,-1], [-1,0], [-1,1], [0,-1], \
+				[0,1], [1,-1], [1,0], [1,1]]
+		for i in adj:
+			x = self.gibo[len(self.gibo)-2][0] + i[0]
+			y = self.gibo[len(self.gibo)-2][1] + i[1]
+
+			if self.checkBoard(x,y):
+					candidate.append([x,y])
+
+		if len(candidate) == 0:
+			return self.adjacentPolicy(player)
+
+		n = random.randrange(0, len(candidate))
+		return candidate[n][0], candidate[n][1]
+
 	def randomPlay(self):
 		player = self.first
 		while True:
 			self.turn += 1
 			if player == 1:
-				x, y = self.adjacentPolicy(player)
+				r = random.randrange(0, 10)
+				if r < 9:
+					x, y = self.lastAdjPolicy(player)
+				else:
+					x, y = self.adjacentPolicy(player)
 			else:
-				x, y = self.randomPolicy(player)
+				r = random.randrange(0, 10)
+				if r < 9:
+					x, y = self.lastAdjPolicy(player)
+				else:
+					x, y = self.adjacentPolicy(player)
 			self.remain -= 1
 			self.board[x][y] = player
 			self.gibo.append([x,y])
 			result = self.checkFinish(player, x, y)
-			##self.printBoard()
+			#print("player ", player, " : ", [x,y])
+			#self.printBoard()
 			if self.remain == 0:
 				print("Draw")
 				break;
@@ -207,14 +225,20 @@ class Sixmok:
 r = 0
 one = 0
 two = 0
+start = 1
 for i in range(0, 100):
-	s = Sixmok(1)
+	s = Sixmok(start)
 	s.randomPlay()
 	r += s.retTurn()
+	if start == 1:
+		start = 2
+	else:
+		start = 1
+
 	if s.retWin() == 1:
 		one += 1
 	else:
 		two += 1
-print(r/100.0)
-print("player 1 : ", one)
-print("player 2 : ", two)
+print("Average of turns : ", r/100.0)
+print("player 1 wins : ", one)
+print("player 2 wins : ", two)
