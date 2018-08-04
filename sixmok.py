@@ -2,10 +2,10 @@ import random
 import numpy as np
 
 class Sixmok:
-	def __init__(self, height, width, two_policy):
+	def __init__(self, height, width, brain):
 		self.width = width
 		self.height = height
-		self.two_policy = two_policy
+		self.brain = brain
 		self.reset(1)
 
 	def reset(self, player):
@@ -236,13 +236,8 @@ class Sixmok:
 		else:
 			player = 1
 
-		if self.two_policy == 1:
-			action = self.randomPolicy(2)
-		elif self.two_policy == 2:
-			action = self.adjacentPolicy(2)
-		elif self.two_policy == 3:
-			action = self.lastAdjPolicy(2)
-
+		action = self.lastAdjPolicy(2)
+		#action = self.brain.get_action(self.state)
 		x = int(action / self.height)
 		y = action % self.height
 

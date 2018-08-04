@@ -4,7 +4,7 @@ import random
 import time
 
 from sixmok import Sixmok
-from model import DQN
+from model import PolicyValueNet
 
 
 tf.app.flags.DEFINE_boolean("train", False, "학습모드. 게임을 화면에 보여주지 않습니다.")
@@ -43,8 +43,8 @@ def train():
     print('Train Mode')
     sess = tf.Session()
 
-    game = Sixmok(HEIGHT, WIDTH, 3)
-    brain = DQN(sess, HEIGHT, WIDTH, NUM_ACTION)
+    brain = PolicyValueNet(sess, HEIGHT, WIDTH)
+    game = Sixmok(HEIGHT, WIDTH, brain)
 
     rewards = tf.placeholder(tf.float32, [None])
     tf.summary.scalar('avg.reward/ep.', tf.reduce_mean(rewards))
@@ -55,7 +55,6 @@ def train():
     writer = tf.summary.FileWriter('logs', sess.graph)
     summary_merged = tf.summary.merge_all()
 
-    brain.update_target_network()
     epsilon = 1.0
     time_step = 0
     total_reward_list = []
@@ -66,19 +65,16 @@ def train():
         player = 1
         p = 0
         state = game.reset(player)
-        brain.init_state(state)
 
         data_states = []
         data_actions = []
+        data_winner = []
         data_rewards = []
 
         while winner == 0:
 
             data_states.append(state)
             action = brain.get_action(state)
-
-            if episode > OBSERVE:
-                epsilon -= 1/10000
 
             next_state, reward, winner, last_action = game.step(player, action)
             data_actions.append(action)
@@ -91,15 +87,13 @@ def train():
 
         data_rewards = discount_rewards(data_rewards, winner)
 
-        for i in range(0, len(data_states)):
-            brain.remember(data_states[i], data_actions[i], data_rewards[i])
+        if winner == 1:
+            for i in range(0, len(data_states)):
+                brain.remember(data_states[i], data_actions[i], data_rewards[i])
 
         if (episode+1) % OBSERVE == 0:
             print("train")
             brain.train()
-
-        if (episode+1) % TARGET_UPDATE_INTERVAL == 0:
-                brain.update_target_network()
 
         total_reward_list.append(total_reward)
 
@@ -116,9 +110,9 @@ def testPlay():
     print('Test Mode')
     sess = tf.Session()
 
-    game = Sixmok(WIDTH, HEIGHT, 3)
     brain = DQN(sess, WIDTH, HEIGHT, NUM_ACTION)
-
+    game = Sixmok(WIDTH, HEIGHT, brain)
+    
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state('model')
     saver.restore(sess, ckpt.model_checkpoint_path)
@@ -136,6 +130,8 @@ def testPlay():
             
             action = brain.get_action(state)
             next_state, reward, winner, last_action = game.step(player, action)
+            #print(int(action/HEIGHT), action%HEIGHT)
+            #print(np.array(state))
             total_reward += reward
             state = next_state
 
@@ -151,9 +147,9 @@ def testPlay():
 
         print('게임횟수: %d 승자 : %d 점수: %d' % (episode + 1, winner, total_reward))
         print('last action : ', winner, [int(last_action/HEIGHT), last_action%HEIGHT])
-        #if winner == 1 and player == 1:
-        print(np.array(state))
-        #if winner == 2 and player == 1:
+        if winner == 1 and player == 1:
+            print(np.array(state))
+        #if winner == 2:
             #print(np.array(state))
 
     print("player 1 win : ", one)
