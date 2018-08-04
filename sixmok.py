@@ -50,7 +50,7 @@ class Sixmok:
 
 			self.state[x][y] = self.player
 			self.available[x][y] = 0
-			self.remain -= 0
+			self.remain -= 1
 			winner = self.checkFinish(self.player, x, y)
 			if self.player == 1:
 				self.player = 2
@@ -159,7 +159,7 @@ class Sixmok:
 		return True
 
 	def randomPolicy(self, player):
-		if self.remain < 0:
+		if self.remain <= 0:
 			return 0
 
 		x = random.randrange(0, self.height)

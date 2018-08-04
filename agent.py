@@ -59,12 +59,21 @@ def train():
     time_step = 0
     total_reward_list = []
 
+    one = 0
+    two = 0
     for episode in range(LEARNING_EPISODE):
         game.reset()
         winner, turns, states, actions, winners = game.runSelfPlay()
         print('%d play : winner is %d' %(episode+1, winner))
         total_reward_list.append(winners[0])
+        if winner == 1:
+            one += 1
+        elif winner == 2:
+            two += 1
 
+        if (episode+1) % OBSERVE == 0:
+            print("player 1 : ", one)
+            print("player 2 : ", two)
         brain.train(states, actions, winners, 0.01)
 
         if (episode+1) % 10 == 0:
