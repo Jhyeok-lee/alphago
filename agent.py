@@ -134,15 +134,15 @@ def testPlay():
 
     brain = PolicyValueNet(sess, HEIGHT, WIDTH)
     game = Sixmok(WIDTH, HEIGHT, brain)
-    """
+    
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state('model')
     saver.restore(sess, ckpt.model_checkpoint_path)
-    """
+    
 
     one = 0
     two = 0
-    for episode in range(TEST_EPISODE+1000):
+    for episode in range(TEST_EPISODE):
         game.reset()
         winner, turns, states, current_players, actions, winners = game.runSelfPlay()
         print('%d play : winner is %d' %(episode+1, winner))

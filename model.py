@@ -88,7 +88,7 @@ class PolicyValueNet:
         return train_op
 
     def policy_value(self, state):
-        state = np.reshape(state,(10,10,1))
+        state = np.reshape(state,(self.width ,self.height,1))
         action_probs = self.session.run(
             self.Policy_Network,
             feed_dict = {self.input_state : [state]})
@@ -97,9 +97,9 @@ class PolicyValueNet:
         return action_probs
 
     def train(self, state_batch, action_batch, winner_batch, lr):
-      state_batch = np.array(state_batch).reshape(len(state_batch),self.width,
+      state_batch = np.array(state_batch).reshape(-1, self.width,
                     self.height, 1)
-      winner_batch = np.array(winner_batch).reshape(len(winner_batch), 1)
+      winner_batch = np.array(winner_batch).reshape(-1, 1)
       self.session.run(self.train_op,
                          feed_dict={
                              self.input_state: state_batch,
@@ -107,9 +107,3 @@ class PolicyValueNet:
                              self.input_win: winner_batch,
                              self.learning_rate: lr
                          })
-
-    def save_model(self, model_path):
-        self.saver.save(self.session, model_path)
-
-    def restore_model(self, model_path):
-        self.saver.restore(self.session, model_path)
