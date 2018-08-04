@@ -2,15 +2,13 @@ import tensorflow as tf
 import numpy as np
 
 class PolicyValueNet:
-    def __init__(self, session, width, height, model_file=None):
-        self.session = session
+    def __init__(self, sess, width, height, model_file=None):
+        self.session = sess
         self.width = width
         self.height = height
         self.n_action = width * height
         self.LR = 0.01
 
-        self.init = tf.global_variables_initializer()
-        self.session.run(self.init)
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         #self.saver = tf.train.Saver()
         #if model_file is not None:
@@ -25,6 +23,9 @@ class PolicyValueNet:
         self.Value_Network = self._build_value_network()
         self.train_op = self._build_train_op()
         self.learning_rate = tf.placeholder(tf.float32)
+        self.init = tf.global_variables_initializer()
+
+        self.session.run(self.init)
     
     def _build_common_network(self):
         model = tf.layers.conv2d(inputs=self.input_state,
@@ -51,7 +52,7 @@ class PolicyValueNet:
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
         model = tf.contrib.layers.flatten(model)
-        model = tf.layers.dense(model, self.n_action,
+        model = tf.layers.dense(inputs=model, units=self.n_action,
                                 activation=tf.nn.log_softmax)
 
         return model
@@ -87,13 +88,13 @@ class PolicyValueNet:
         return train_op
 
     def policy_value(self, state):
-        state = np.reshape(state, (self.width, self.height, 1))
-        action_probs, value = self.session.run(
-            [self.Policy_Network, self.Value_Network],
+        state = np.reshape(state,(10,10,1))
+        action_probs = self.session.run(
+            self.Policy_Network,
             feed_dict = {self.input_state : [state]})
         action_probs = np.exp(action_probs)
 
-        return action_probs, value
+        return action_probs
 
     def train(self, state_batch, action_batch, winner_batch, lr):
       state_batch = np.array(state_batch).reshape(len(state_batch),self.width,

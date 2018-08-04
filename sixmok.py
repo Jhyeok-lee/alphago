@@ -10,9 +10,10 @@ class Sixmok:
 
 	def reset(self):
 		self.player = random.randrange(1, 3)
-		self.state = np.zeros(self.width * self.height, dtype=int).reshape(self.width, 
-								self.height)
-		self.available = self.state + 1
+		self.state = []
+		for i in range(self.height):
+			self.state.append([0] * self.width)
+		self.available = np.array(self.state) + 1
 		self.randomBlockingCnt = random.randrange(0, 6) * 2
 		self.remain = self.width * self.height - self.randomBlockingCnt
 		self.blocking = []
@@ -34,7 +35,7 @@ class Sixmok:
 		states, actions, current_players = [], [], []
 		while winner == 0:
 			turns += 1
-			action_probs = self.brain.policy_value(self.state)[0][0]
+			action_probs = self.brain.policy_value(self.state)[0]
 			action_probs = np.array(action_probs).reshape(self.width, self.height)
 			action_probs = action_probs * self.available
 			action = np.argmax(action_probs)
@@ -61,7 +62,7 @@ class Sixmok:
 		if winner == 1 or winner == 2:
 			winners[np.array(current_players) == winner] = 1.0
 			winners[np.array(current_players) != winner] = -1.0
-			return winner, turns, states, actions, winners
+			return winner, turns, states, current_players, actions, winners
 
 	def checkFinish(self, player, x, y):
 		# up-down
