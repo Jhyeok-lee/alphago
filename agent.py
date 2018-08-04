@@ -117,7 +117,7 @@ def train():
             brain.train(states_batch, actions_batch, winners_batch, 0.01)
             data = []
 
-        """
+        
         if (episode+1) % 100 == 0:
             summary = sess.run(summary_merged, feed_dict={rewards: total_reward_list})
             writer.add_summary(summary, (episode+1))
@@ -125,7 +125,7 @@ def train():
 
         if (episode+1) % 200 == 0:
             saver.save(sess, 'model/dqn.ckpt', global_step = (episode+1))
-        """
+        
 
 
 def testPlay():
@@ -134,14 +134,15 @@ def testPlay():
 
     brain = PolicyValueNet(sess, HEIGHT, WIDTH)
     game = Sixmok(WIDTH, HEIGHT, brain)
-    
+    """
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state('model')
     saver.restore(sess, ckpt.model_checkpoint_path)
+    """
 
     one = 0
     two = 0
-    for episode in range(TEST_EPISODE):
+    for episode in range(TEST_EPISODE+1000):
         game.reset()
         winner, turns, states, current_players, actions, winners = game.runSelfPlay()
         print('%d play : winner is %d' %(episode+1, winner))

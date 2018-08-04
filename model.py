@@ -51,7 +51,7 @@ class PolicyValueNet:
                                       padding="same",
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
-        model = tf.contrib.layers.flatten(model)
+        model = tf.reshape(model, [-1, 4 * self.width * self.height])
         model = tf.layers.dense(inputs=model, units=self.n_action,
                                 activation=tf.nn.log_softmax)
 
@@ -63,7 +63,7 @@ class PolicyValueNet:
                                       padding="same",
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
-        model = tf.contrib.layers.flatten(model)
+        model = tf.reshape(model, [-1, 2 * self.width * self.height])
         model = tf.layers.dense(model, 64, activation=tf.nn.relu)
         model = tf.layers.dense(model, 1, activation=tf.nn.relu)
 
