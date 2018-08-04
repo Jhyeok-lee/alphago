@@ -60,42 +60,12 @@ def train():
     total_reward_list = []
 
     for episode in range(LEARNING_EPISODE):
-        winner = 0
-        total_reward = 0
-        player = 1
-        p = 0
-        state = game.reset(player)
+        game.reset()
+        winner, turns, states, actions, winners = game.runSelfPlay()
+        print('%d play : winner is %d' %(episode+1, winner))
+        total_reward_list.append(winners[0])
 
-        data_states = []
-        data_actions = []
-        data_winner = []
-        data_rewards = []
-
-        while winner == 0:
-
-            data_states.append(state)
-            action = brain.get_action(state)
-
-            next_state, reward, winner, last_action = game.step(player, action)
-            data_actions.append(action)
-            data_rewards.append(reward)
-            
-            total_reward += reward
-            state = next_state
-
-        print('게임횟수: %d 승자 : %d 점수: %d' % (episode + 1, winner, total_reward))
-
-        data_rewards = discount_rewards(data_rewards, winner)
-
-        if winner == 1:
-            for i in range(0, len(data_states)):
-                brain.remember(data_states[i], data_actions[i], data_rewards[i])
-
-        if (episode+1) % OBSERVE == 0:
-            print("train")
-            brain.train()
-
-        total_reward_list.append(total_reward)
+        brain.train(states, actions, winners, 0.01)
 
         if (episode+1) % 10 == 0:
             summary = sess.run(summary_merged, feed_dict={rewards: total_reward_list})
@@ -110,7 +80,7 @@ def testPlay():
     print('Test Mode')
     sess = tf.Session()
 
-    brain = DQN(sess, WIDTH, HEIGHT, NUM_ACTION)
+    brain = PolicyValueNet(sess, HEIGHT, WIDTH)
     game = Sixmok(WIDTH, HEIGHT, brain)
     
     saver = tf.train.Saver()
@@ -120,37 +90,14 @@ def testPlay():
     one = 0
     two = 0
     for episode in range(TEST_EPISODE):
-        total_reward = 0
-        player = 1
-        state = game.reset(player)
-        brain.init_state(state)
-        winner = 0
-        
-        while winner == 0:
-            
-            action = brain.get_action(state)
-            next_state, reward, winner, last_action = game.step(player, action)
-            #print(int(action/HEIGHT), action%HEIGHT)
-            #print(np.array(state))
-            total_reward += reward
-            state = next_state
-
-            if winner == 1:
-                one += 1
-                break
-            elif winner == 2:
-                two += 1
-                break
-            elif winner == 3:
-                break
-                player = 1
-
-        print('게임횟수: %d 승자 : %d 점수: %d' % (episode + 1, winner, total_reward))
-        print('last action : ', winner, [int(last_action/HEIGHT), last_action%HEIGHT])
-        if winner == 1 and player == 1:
-            print(np.array(state))
-        #if winner == 2:
-            #print(np.array(state))
+        game.reset()
+        winner, turns, states, actions, winners = game.runSelfPlay()
+        print('%d play : winner is %d' %(episode+1, winner))
+        print(np.array(states[len(states)-1]))
+        if winner == 1:
+            one += 1
+        elif winner == 2:
+            two += 1
 
     print("player 1 win : ", one)
     print("player 2 win : ", two)

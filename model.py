@@ -7,22 +7,23 @@ class PolicyValueNet:
         self.width = width
         self.height = height
         self.n_action = width * height
+        self.LR = 0.01
 
         self.init = tf.global_variables_initializer()
         self.session.run(self.init)
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
-        self.saver = tf.train.Saver()
-        if model_file is not None:
-            self.restore_model(model_file)
+        #self.saver = tf.train.Saver()
+        #if model_file is not None:
+        #    self.restore_model(model_file)
 
         self.input_state = tf.placeholder(tf.float32, [None, width, height, 1])
-        self.input_action = tf.placeholder(tf.float32, [None])
-        self.input_win = tf.placeholder(tf.float32, [None])
+        self.input_action = tf.placeholder(tf.int32, [None])
+        self.input_win = tf.placeholder(tf.float32, [None, 1])
 
-        self.Common_Network = _build_common_network()
-        self.Policy_Network = _build_policy_network()
-        self.Value_Network = _build_value_network()
-        self.train_op = _build_train_op()
+        self.Common_Network = self._build_common_network()
+        self.Policy_Network = self._build_policy_network()
+        self.Value_Network = self._build_value_network()
+        self.train_op = self._build_train_op()
         self.learning_rate = tf.placeholder(tf.float32)
     
     def _build_common_network(self):
@@ -55,7 +56,7 @@ class PolicyValueNet:
 
         return model
 
-    def _build_policy_network(self):
+    def _build_value_network(self):
         model = tf.layers.conv2d(inputs=self.Common_Network,
                                       filters=2, kernel_size=[1, 1],
                                       padding="same",
@@ -70,7 +71,7 @@ class PolicyValueNet:
     def _build_train_op(self):
         action_one_hot = tf.one_hot(self.input_action, self.n_action)
         policy_loss = tf.negative(tf.reduce_mean(
-            tf.reduce_sum(tf.multiply(one_hot, self.Policy_Network))))
+            tf.reduce_sum(tf.multiply(action_one_hot, self.Policy_Network))))
         value_loss = tf.losses.mean_squared_error(self.input_win,
                                                   self.Value_Network)
 
@@ -80,7 +81,7 @@ class PolicyValueNet:
             [tf.nn.l2_loss(v) for v in vars if 'bias' not in v.name.lower()])
 
         loss = value_loss + policy_loss + l2_penalty
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.LR)
         train_op = optimizer.minimize(loss)
 
         return train_op
@@ -89,13 +90,16 @@ class PolicyValueNet:
         state = np.reshape(state, (self.width, self.height, 1))
         action_probs, value = self.session.run(
             [self.Policy_Network, self.Value_Network],
-            feed_dict = {self.input_state : state})
+            feed_dict = {self.input_state : [state]})
         action_probs = np.exp(action_probs)
 
         return action_probs, value
 
     def train(self, state_batch, action_batch, winner_batch, lr):
-        self.session.run(self.train_op,
+      state_batch = np.array(state_batch).reshape(len(state_batch),self.width,
+                    self.height, 1)
+      winner_batch = np.array(winner_batch).reshape(len(winner_batch), 1)
+      self.session.run(self.train_op,
                          feed_dict={
                              self.input_state: state_batch,
                              self.input_action: action_batch,

@@ -6,31 +6,62 @@ class Sixmok:
 		self.width = width
 		self.height = height
 		self.brain = brain
-		self.reset(1)
+		self.reset()
 
-	def reset(self, player):
-		self.turn = 0
-		self.state = []
+	def reset(self):
+		self.player = random.randrange(1, 3)
+		self.state = np.zeros(self.width * self.height, dtype=int).reshape(self.width, 
+								self.height)
+		self.available = self.state + 1
 		self.randomBlockingCnt = random.randrange(0, 6) * 2
 		self.remain = self.width * self.height - self.randomBlockingCnt
 		self.blocking = []
-		self.first = player
 		self.gibo = []
-		self.win = 0
-
-		for i in range(0, self.height):
-			self.state.append([0] * self.width)
 
 		for i in range(0, self.randomBlockingCnt):
 			x = random.randrange(0, self.height)
 			y = random.randrange(0, self.width)
 			if self.state[x][y] == 0:
 				self.state[x][y] = 3
+				self.available[x][y] = 0
 				self.blocking.append([x,y])
 			else:
 				i -= 1
 
-		return self.state
+	def runSelfPlay(self):
+		turns = 0
+		winner = 0
+		states, actions, current_players = [], [], []
+		while winner == 0:
+			turns += 1
+			action_probs = self.brain.policy_value(self.state)[0][0]
+			action_probs = np.array(action_probs).reshape(self.width, self.height)
+			action_probs = action_probs * self.available
+			action = np.argmax(action_probs)
+			if self.player == 2:
+				action = self.lastAdjPolicy(self.player)
+
+			x = int(action / self.width)
+			y = action % self.height
+
+			states.append(self.state)
+			actions.append(action)
+			current_players.append(self.player)
+
+			self.state[x][y] = self.player
+			self.available[x][y] = 0
+			self.remain -= 0
+			winner = self.checkFinish(self.player, x, y)
+			if self.player == 1:
+				self.player = 2
+			else:
+				self.player = 1
+
+		winners = np.zeros(len(current_players))
+		if winner == 1 or winner == 2:
+			winners[np.array(current_players) == winner] = 1.0
+			winners[np.array(current_players) != winner] = -1.0
+			return winner, turns, states, actions, winners
 
 	def checkFinish(self, player, x, y):
 		# up-down
@@ -308,16 +339,6 @@ class Sixmok:
 				player = 2
 			else:
 				player = 1
-
-	def printBoard(self):
-		for row in self.state:
-			print(row)
-
-	def retTurn(self):
-		return self.turn
-
-	def retWin(self):
-		return self.win
 
 """
 one = 0
