@@ -1,19 +1,19 @@
 import random
 import numpy as np
-from time import sleep
+from ddogo import DDoGo
 
 class Sixmok:
 	def __init__(self, height, width, brain):
 		self.width = width
 		self.height = height
 		self.brain = brain
+		self.ddoggo = DDoGo(height, width, brain)
 		self.reset()
 
 	def reset(self):
 		self.player = random.randrange(1, 3)
-		self.state = []
-		for i in range(self.height):
-			self.state.append([0] * self.width)
+		self.state = np.zeros(self.width * self.height).reshape(
+			self.width, self.height)
 		self.available = np.array(self.state) + 1
 		self.randomBlockingCnt = random.randrange(0, 6) * 2
 		self.remain = self.width * self.height - self.randomBlockingCnt
@@ -35,21 +35,16 @@ class Sixmok:
 		winner = 0
 		states, actions, current_players = [], [], []
 		while winner == 0:
-			sleep(0.0001)
 			turns += 1
 			
 			if self.player == 2:
 				action = self.lastAdjPolicy(self.player)
 			else:
-				action_probs = self.brain.policy_value(self.state)[0]
-				action_probs = np.array(action_probs).reshape(self.width, self.height)
-				action_probs = action_probs * self.available
-				action = np.argmax(action_probs)
+				action = self.ddoggo.get_action(self.player, 
+					self.state, self.available)
 
 			x = int(action / self.width)
 			y = action % self.height
-
-			states.append(self.state)
 			actions.append(action)
 			current_players.append(self.player)
 
@@ -58,16 +53,16 @@ class Sixmok:
 			self.remain -= 1
 			self.gibo.append([x,y])
 			winner = self.checkFinish(self.player, x, y)
+			states.append(np.array(self.state))
 			if self.player == 1:
 				self.player = 2
 			else:
 				self.player = 1
 
 		winners = np.zeros(len(current_players))
-		if winner == 1 or winner == 2:
-			winners[np.array(current_players) == winner] = 1.0
-			winners[np.array(current_players) != winner] = -1.0
-			return winner, turns, states, current_players, actions, winners
+		winners[np.array(current_players) == winner] = 1.0
+		winners[np.array(current_players) != winner] = -1.0
+		return winner, turns, states, current_players, actions, winners
 
 	def checkFinish(self, player, x, y):
 		# up-down
@@ -153,6 +148,9 @@ class Sixmok:
 				return 2
 			return 1
 
+		if self.remain <= 0:
+			return 3
+
 		return 0
 
 	def checkBoard(self, x, y):
@@ -183,7 +181,7 @@ class Sixmok:
 		adj = [[-1,-1], [-1,0], [-1,1], [0,-1], \
 				[0,1], [1,-1], [1,0], [1,1]]
 		candidate = []
-		tempState = self.state
+		tempState = np.array(self.state)
 		while i < len(self.gibo):
 			for k in adj:
 				x = self.gibo[i][0] + k[0]
@@ -196,8 +194,10 @@ class Sixmok:
 				if winner == 0 or winner == player:
 					candidate.append([x,y])
 				tempState[x][y] = 0
+
 			i += 2
 
+		tempState = np.array(self.state)
 		for i in self.blocking:
 			for j in adj:
 				x = i[0] + j[0]
