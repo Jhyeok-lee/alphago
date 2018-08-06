@@ -7,13 +7,13 @@ class PolicyValueNet:
         self.width = width
         self.height = height
         self.n_action = width * height
-        self.LR = 0.01
+        self.LR = 0.001
 
-        self.initializer = tf.contrib.layers.variance_scaling_initializer()
         #self.saver = tf.train.Saver()
         #if model_file is not None:
         #    self.restore_model(model_file)
 
+        self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None, width, height, 1])
         self.input_action = tf.placeholder(tf.int32, [None])
         self.input_win = tf.placeholder(tf.float32, [None, 1])
@@ -22,9 +22,7 @@ class PolicyValueNet:
         self.Policy_Network = self._build_policy_network()
         self.Value_Network = self._build_value_network()
         self.train_op = self._build_train_op()
-        self.learning_rate = tf.placeholder(tf.float32)
         self.init = tf.global_variables_initializer()
-
         self.session.run(self.init)
     
     def _build_common_network(self):
@@ -73,6 +71,7 @@ class PolicyValueNet:
         action_one_hot = tf.one_hot(self.input_action, self.n_action)
         policy_loss = tf.negative(tf.reduce_mean(
             tf.reduce_sum(tf.multiply(action_one_hot, self.Policy_Network))))
+        
         value_loss = tf.losses.mean_squared_error(self.input_win,
                                                   self.Value_Network)
 
@@ -80,7 +79,7 @@ class PolicyValueNet:
         vars = tf.trainable_variables()
         l2_penalty = l2_penalty_beta * tf.add_n(
             [tf.nn.l2_loss(v) for v in vars if 'bias' not in v.name.lower()])
-
+        
         loss = value_loss + policy_loss + l2_penalty
         optimizer = tf.train.AdamOptimizer(learning_rate=self.LR)
         train_op = optimizer.minimize(loss)
@@ -89,12 +88,11 @@ class PolicyValueNet:
 
     def policy_value(self, state):
         state = np.reshape(state,(self.width ,self.height,1))
-        action_probs = self.session.run(
-            self.Policy_Network,
+        action_probs, value = self.session.run(
+            [self.Policy_Network, self.Value_Network], 
             feed_dict = {self.input_state : [state]})
         action_probs = np.exp(action_probs)
-
-        return action_probs
+        return action_probs.reshape(self.width,self.height)
 
     def train(self, state_batch, action_batch, winner_batch, lr):
       state_batch = np.array(state_batch).reshape(-1, self.width,
@@ -104,6 +102,4 @@ class PolicyValueNet:
                          feed_dict={
                              self.input_state: state_batch,
                              self.input_action: action_batch,
-                             self.input_win: winner_batch,
-                             self.learning_rate: lr
-                         })
+                             self.input_win: winner_batch})
