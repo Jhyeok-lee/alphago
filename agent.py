@@ -7,7 +7,6 @@ from collections import deque
 from sixmok import Sixmok
 from model import PolicyValueNet
 
-
 tf.app.flags.DEFINE_boolean("train", False, "학습모드. 게임을 화면에 보여주지 않습니다.")
 FLAGS = tf.app.flags.FLAGS
 
@@ -69,14 +68,13 @@ def train():
     brain = PolicyValueNet(sess, HEIGHT, WIDTH)
     game = Sixmok(HEIGHT, WIDTH, brain)
 
+    
     rewards = tf.placeholder(tf.float32, [None])
     tf.summary.scalar('avg.reward/ep.', tf.reduce_mean(rewards))
-
     saver = tf.train.Saver()
-    sess.run(tf.global_variables_initializer())
-
     writer = tf.summary.FileWriter('logs', sess.graph)
     summary_merged = tf.summary.merge_all()
+    
 
     epsilon = 1.0
     time_step = 0
@@ -90,6 +88,9 @@ def train():
         winner, turns, states, current_players, actions, winners \
                 = game.runSelfPlay()
         print('%d play : winner is %d' %(episode+1, winner))
+        print('last action, player : %d, (%d, %d)' %(current_players[len(states)-1]
+            , int(actions[len(states)-1]/HEIGHT), actions[len(states)-1]%WIDTH))
+        print(states[len(states)-1])
         total_reward_list.append(winners[0])
         if winner == 1:
             one += 1
@@ -107,26 +108,24 @@ def train():
 
         play_data = list(zip(augmented_states, augmented_actions,
                         augmented_winners))[:]
-        data.extend(play_data)
-
+        if winner == 1 or winner == 2:
+            data.extend(play_data)
+        
         if (episode+1) % 100 == 0:
             mini_batch = random.sample(data, 100)
             states_batch = [d[0] for d in mini_batch]
             actions_batch = [d[1] for d in mini_batch]
             winners_batch = [d[2] for d in mini_batch]
             brain.train(states_batch, actions_batch, winners_batch, 0.01)
-            data = []
-
         
         if (episode+1) % 100 == 0:
             summary = sess.run(summary_merged, feed_dict={rewards: total_reward_list})
             writer.add_summary(summary, (episode+1))
             total_reward_list = []
 
-        if (episode+1) % 200 == 0:
+        if (episode+1) % 100 == 0:
             saver.save(sess, 'model/dqn.ckpt', global_step = (episode+1))
         
-
 
 def testPlay():
     print('Test Mode')
@@ -139,14 +138,24 @@ def testPlay():
     ckpt = tf.train.get_checkpoint_state('model')
     saver.restore(sess, ckpt.model_checkpoint_path)
     
-
     one = 0
     two = 0
-    for episode in range(TEST_EPISODE):
+    w = 100
+    for episode in range(w):
         game.reset()
         winner, turns, states, current_players, actions, winners = game.runSelfPlay()
+        
+        if w == 1:
+            for i in range(len(states)):
+                print("player %d, (%d, %d)" %(current_players[i]
+            , int(actions[i]/HEIGHT), actions[i]%WIDTH))
+                print(states[i])
+
         print('%d play : winner is %d' %(episode+1, winner))
-        print(np.array(states[len(states)-1]))
+        print('last action, player : %d, (%d, %d)' %(current_players[len(states)-1]
+            , int(actions[len(states)-1]/HEIGHT), actions[len(states)-1]%WIDTH))
+        print(states[len(states)-1])
+        
         if winner == 1:
             one += 1
         elif winner == 2:
