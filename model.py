@@ -63,7 +63,7 @@ class PolicyValueNet:
                                       kernel_initializer=self.initializer)
         model = tf.reshape(model, [-1, 2 * self.width * self.height])
         model = tf.layers.dense(model, 64, activation=tf.nn.relu)
-        model = tf.layers.dense(model, 1, activation=tf.nn.relu)
+        model = tf.layers.dense(model, 1, activation=tf.nn.tanh)
 
         return model
 
