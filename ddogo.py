@@ -9,43 +9,45 @@ class DDoGo(object):
 		self.available = None
 
 	def get_action(self, player, state, available):
-		self.state = state
-		self.available = available
+		self.state = np.array(state)
+		self.available = np.array(available)
 		self.max_depth = 3
 		self.max_branch_count = 5
-		score = self.cal_score()
-		action_probs, value = self.minimax_search(player, state, available,
-			100, 0, 0, 0)
+		if player == 2:
+			self.state = self.change_state(self.state)
+			player = 1
 
-		probs, v = self.brain.policy_value(state)
+		action_value, ret_value = self.minimax_search(self.state, \
+			self.available, 100, 0, 0, 0)
 
-		action_probs *= np.reshape(self.available, self.height * self.width)
-		action_probs *= probs
-		action_probs = self.softmax(action_probs)
+		actions = [d[0] for d in action_value]
+		values = [d[1] for d in action_value]
 
-		if player == 1:
-			move = np.argmax(action_probs)
-		else:
-			move = np.argmin(action_probs)
+		values = self.softmax(values)
+		action_probs = np.zeros(self.height * self.width)
+		for i in range(len(actions)):
+			action_probs[actions[i]] = values[i]
+		move = np.argmax(action_probs)
+		print(self.state)
+		print(action_probs)
 
 		return move, action_probs
 
-	def minimax_search(self, player, state, available, n_count, x, y, depth):
+	def minimax_search(self, state, available, n_count, x, y, depth):
 		action_probs, value = self.brain.policy_value(state)
 		action_probs *= np.reshape(available, self.height * self.width)
 		possible_actions = action_probs.argsort()[::-1][:n_count]
-		value_by_action = np.zeros(self.height * self.width)
-		ret_value = 0.0
-
 		available_count = np.count_nonzero(available)
 		winner = self.checkFinish(state, x, y)
+		action_value = []
 		if winner == 2:
 			winner = -1
 		if available_count == 0 or winner != 0:
-			return value_by_action, winner
-		if depth >= self.max_depth:
-			return value_by_action, value
+			return action_value, winner
+		if depth > self.max_depth:
+			return action_value, value
 
+		values = []
 		branch_count = 0
 		for action in possible_actions:
 			if branch_count == self.max_branch_count:
@@ -55,22 +57,26 @@ class DDoGo(object):
 			next_available = np.array(available)
 			x, y = self.action_to_coor(action)
 
-			next_state[x][y] = player
+			next_state[x][y] = 1
 			next_available[x][y] = 0
-			if player == 1:
-				next_player = 2
-			else:
-				next_player = 1
-			p, v = self.minimax_search(next_player, next_state, next_available,
+			next_state = self.change_state(next_state)
+			p, v = self.minimax_search(next_state, next_available,
 				n_count, x, y, depth+1)
-			value_by_action[action] = v
+			values.append(value - v)
+			action_value.append([action, value - v])
 
-		if player == 1:
-			ret_value = np.amax(value_by_action)
-		else:
-			ret_value = np.amin(value_by_action)
+		ret_value = max(values)
+		return action_value, ret_value * (0.99 ** (self.max_depth - depth))
 
-		return value_by_action, ret_value
+	def change_state(self, state):
+		ret_state = np.array(state)
+		for i in range(self.height):
+			for j in range(self.width):
+				if ret_state[i][j] == 1:
+					ret_state[i][j] = 2
+				elif ret_state[i][j] == 2:
+					ret_state[i][j] = 1
+		return ret_state
 
 	def softmax(self, x):
 		probs = np.exp(x - np.max(x))
@@ -84,61 +90,6 @@ class DDoGo(object):
 
 	def coor_to_action(self, x, y):
 		return x * self.height + y
-
-	def cal_score(self):
-		score = np.zeros(self.height * self.width).reshape(self.height,
-			self.width)
-		row_score = np.zeros(self.height)
-		col_score = np.zeros(self.width)
-		diag1_score = np.zeros(self.height + self.width - 1)
-		diag2_score = np.zeros(self.height + self.width - 1)
-
-		for i in range(0, self.height):
-			row = 0
-			col = 0
-			for j in range(0, self.width):
-				if self.state[i][j] != 0:
-					row += 1
-				if self.state[j][i] != 0:
-					col += 1
-			row_score[i] = row
-			col_score[i] = col
-
-		for i in range(0, self.height + self.width - 1):
-			a = i
-			b = 0
-			while a >= self.height:
-				a -= 1
-				b += 1
-			diag1 = 0
-			while b < self.width:
-				if self.state[a][b] != 0:
-					diag1 += 1
-				a -= 1
-				b += 1
-			diag1_score[i] = diag1
-
-		for i in range(-self.width + 1, self.width):
-			a = i
-			b = 0
-			while a < 0:
-				a += 1
-				b += 1
-			diag2 = 0
-			while a < self.height and b < self.width:
-				if self.state[a][b] != 0:
-					diag2 += 1
-				a += 1
-				b += 1
-			diag2_score[i + self.width-1] = diag2
-
-		for i in range(0, self.height):
-			for j in range(0, self.width):
-				score[i][j] += row_score[i] + col_score[j]
-				score[i][j] += diag1_score[i+j]
-				score[i][j] += diag2_score[i-j+self.width-1]
-
-		return score
 
 	def checkFinish(self, state, x, y):
 		tstate = list(state)

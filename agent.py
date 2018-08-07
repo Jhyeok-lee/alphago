@@ -131,7 +131,7 @@ def testPlay():
     two = 0
     w = 1
     for episode in range(w):
-        game.reset(1)
+        game.reset(0)
         winner, turns, states, current_players, actions, winners, \
                 last_state = game.runSelfPlay()
         
