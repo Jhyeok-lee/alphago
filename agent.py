@@ -10,7 +10,7 @@ from model import PolicyValueNet
 tf.app.flags.DEFINE_boolean("train", False, "학습모드. 게임을 화면에 보여주지 않습니다.")
 FLAGS = tf.app.flags.FLAGS
 
-LEARNING_EPISODE = 50000
+LEARNING_EPISODE = 5000
 TEST_EPISODE = 100
 TARGET_UPDATE_INTERVAL = 1000
 TRAIN_INTERVAL = 4
@@ -28,32 +28,19 @@ def augmenting_data(states, current_players, actions, winners):
 
     for i in range(0, len(states)):
         state = states[i]
-        action = actions[i]
+        action_prob = np.array(actions[i]).reshape(HEIGHT, WIDTH)
         winner = winners[i]
         player = current_players[i]
 
-        x = int(action / HEIGHT)
-        y = action % HEIGHT
-        action_2d = np.zeros(WIDTH * HEIGHT, dtype=int).reshape(WIDTH, HEIGHT)
-        action_2d[x][y] = player
-
         for j in [1, 2, 3, 4]:
             rotate_state = np.rot90(state, j)
-            rotate_action_2d = np.rot90(action_2d, j)
-            index = np.where(rotate_action_2d != 0)
-            x = index[0][0]
-            y = index[1][0]
-            rotate_action = x * HEIGHT + y
+            rotate_action = np.rot90(action_prob, j).reshape(HEIGHT * WIDTH)
             augmented_states.append(rotate_state)
             augmented_actions.append(rotate_action)
             augmented_winners.append(winner)
 
         flip_state = np.fliplr(state)
-        flip_action_2d = np.fliplr(action_2d)
-        index = np.where(flip_action_2d != 0)
-        x = index[0][0]
-        y = index[1][0]
-        flip_action = x * HEIGHT + y
+        flip_action = np.fliplr(action_prob).reshape(HEIGHT * WIDTH)
         augmented_states.append(flip_state)
         augmented_actions.append(flip_action)
         augmented_winners.append(winner)
@@ -84,13 +71,15 @@ def train():
     two = 0
     data = deque(maxlen=10000)
     for episode in range(LEARNING_EPISODE):
-        game.reset()
-        winner, turns, states, current_players, actions, winners \
-                = game.runSelfPlay()
+        if episode < 1000:
+            game.reset(1)
+        else:
+            game.reset(0)
+
+        winner, turns, states, current_players, actions, winners, \
+                last_state = game.runSelfPlay()
         print('%d play : winner is %d' %(episode+1, winner))
-        print('last action, player : %d, (%d, %d)' %(current_players[len(states)-1]
-            , int(actions[len(states)-1]/HEIGHT), actions[len(states)-1]%WIDTH))
-        print(states[len(states)-1])
+        print(last_state)
         total_reward_list.append(winners[0])
         if winner == 1:
             one += 1
@@ -140,20 +129,17 @@ def testPlay():
     
     one = 0
     two = 0
-    w = 100
+    w = 1
     for episode in range(w):
-        game.reset()
-        winner, turns, states, current_players, actions, winners = game.runSelfPlay()
+        game.reset(1)
+        winner, turns, states, current_players, actions, winners, \
+                last_state = game.runSelfPlay()
         
         if w == 1:
             for i in range(len(states)):
-                print("player %d, (%d, %d)" %(current_players[i]
-            , int(actions[i]/HEIGHT), actions[i]%WIDTH))
                 print(states[i])
 
         print('%d play : winner is %d' %(episode+1, winner))
-        print('last action, player : %d, (%d, %d)' %(current_players[len(states)-1]
-            , int(actions[len(states)-1]/HEIGHT), actions[len(states)-1]%WIDTH))
         print(states[len(states)-1])
         
         if winner == 1:

@@ -10,7 +10,7 @@ class Sixmok:
 		self.ddoggo = DDoGo(height, width, brain)
 		self.reset()
 
-	def reset(self):
+	def reset(self, pre_train=0):
 		self.player = random.randrange(1, 3)
 		self.state = np.zeros(self.width * self.height).reshape(
 			self.width, self.height)
@@ -19,6 +19,7 @@ class Sixmok:
 		self.remain = self.width * self.height - self.randomBlockingCnt
 		self.blocking = []
 		self.gibo = []
+		self.pre_train = pre_train
 
 		for i in range(0, self.randomBlockingCnt):
 			x = random.randrange(0, self.height)
@@ -33,19 +34,22 @@ class Sixmok:
 	def runSelfPlay(self):
 		turns = 0
 		winner = 0
-		states, actions, current_players = [], [], []
+		states, action_probs, current_players = [], [], []
 		while winner == 0:
 			turns += 1
 			
-			if self.player == 2:
-				action = self.lastAdjPolicy(self.player)
-			else:
-				action = self.ddoggo.get_action(self.player, 
+			if self.pre_train == 0:
+				action, prob = self.ddoggo.get_action(self.player, 
 					self.state, self.available)
+			else:
+				action = self.lastAdjPolicy(self.player)
+				prob = np.zeros(self.height * self.width)
+				prob[action] = 0.42
 
 			x = int(action / self.width)
 			y = action % self.height
-			actions.append(action)
+			states.append(np.array(self.state))
+			action_probs.append(prob)
 			current_players.append(self.player)
 
 			self.state[x][y] = self.player
@@ -53,7 +57,6 @@ class Sixmok:
 			self.remain -= 1
 			self.gibo.append([x,y])
 			winner = self.checkFinish(self.player, x, y)
-			states.append(np.array(self.state))
 			if self.player == 1:
 				self.player = 2
 			else:
@@ -62,7 +65,8 @@ class Sixmok:
 		winners = np.zeros(len(current_players))
 		winners[np.array(current_players) == winner] = 1.0
 		winners[np.array(current_players) != winner] = -1.0
-		return winner, turns, states, current_players, actions, winners
+		return winner, turns, states, current_players, action_probs, winners, \
+			self.state
 
 	def checkFinish(self, player, x, y):
 		# up-down

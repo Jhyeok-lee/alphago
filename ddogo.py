@@ -11,13 +11,24 @@ class DDoGo(object):
 	def get_action(self, player, state, available):
 		self.state = state
 		self.available = available
-		self.max_depth = 5
+		self.max_depth = 3
 		self.max_branch_count = 5
 		score = self.cal_score()
 		action_probs, value = self.minimax_search(player, state, available,
 			100, 0, 0, 0)
+
+		probs, v = self.brain.policy_value(state)
+
 		action_probs *= np.reshape(self.available, self.height * self.width)
-		return np.argmax(action_probs)
+		action_probs *= probs
+		action_probs = self.softmax(action_probs)
+
+		if player == 1:
+			move = np.argmax(action_probs)
+		else:
+			move = np.argmin(action_probs)
+
+		return move, action_probs
 
 	def minimax_search(self, player, state, available, n_count, x, y, depth):
 		action_probs, value = self.brain.policy_value(state)
@@ -37,16 +48,13 @@ class DDoGo(object):
 
 		branch_count = 0
 		for action in possible_actions:
-			if action_probs[action] == 0:
-				continue
 			if branch_count == self.max_branch_count:
 				break
 			branch_count += 1
 			next_state = np.array(state)
 			next_available = np.array(available)
 			x, y = self.action_to_coor(action)
-			if state[x][y] != 0:
-				continue
+
 			next_state[x][y] = player
 			next_available[x][y] = 0
 			if player == 1:
@@ -55,15 +63,14 @@ class DDoGo(object):
 				next_player = 1
 			p, v = self.minimax_search(next_player, next_state, next_available,
 				n_count, x, y, depth+1)
-			value_by_action[action] = value + v
+			value_by_action[action] = v
 
 		if player == 1:
 			ret_value = np.amax(value_by_action)
 		else:
 			ret_value = np.amin(value_by_action)
 
-		ret_action_probs = self.softmax(value_by_action)
-		return ret_action_probs, ret_value
+		return value_by_action, ret_value
 
 	def softmax(self, x):
 		probs = np.exp(x - np.max(x))

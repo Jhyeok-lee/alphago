@@ -15,7 +15,7 @@ class PolicyValueNet:
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None, width, height, 1])
-        self.input_action = tf.placeholder(tf.int32, [None])
+        self.input_action = tf.placeholder(tf.float32, [None, width * height])
         self.input_win = tf.placeholder(tf.float32, [None, 1])
 
         self.Common_Network = self._build_common_network()
@@ -68,9 +68,8 @@ class PolicyValueNet:
         return model
 
     def _build_train_op(self):
-        action_one_hot = tf.one_hot(self.input_action, self.n_action)
         policy_loss = tf.negative(tf.reduce_mean(
-            tf.reduce_sum(tf.multiply(action_one_hot, self.Policy_Network))))
+            tf.reduce_sum(tf.multiply(self.input_action, self.Policy_Network))))
         
         value_loss = tf.losses.mean_squared_error(self.input_win,
                                                   self.Value_Network)
