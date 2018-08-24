@@ -92,7 +92,7 @@ class PolicyValueNet:
         action_probs = np.exp(action_probs)
         return action_probs[0], value
 
-    def train(self, state_batch, action_batch, winner_batch, lr):
+    def train(self, state_batch, action_batch, winner_batch):
       state_batch = np.array(state_batch).reshape(-1, self.width,
                     self.height, 1)
       winner_batch = np.array(winner_batch).reshape(-1, 1)
