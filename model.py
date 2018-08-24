@@ -2,16 +2,15 @@ import tensorflow as tf
 import numpy as np
 
 class PolicyValueNet:
-    def __init__(self, sess, width, height, model_file=None):
-        self.session = sess
+    def __init__(self, width, height, model_file=None):
+        self.session = tf.Session()
         self.width = width
         self.height = height
         self.n_action = width * height
         self.LR = 0.001
-
-        #self.saver = tf.train.Saver()
-        #if model_file is not None:
-        #    self.restore_model(model_file)
+        self.saver = tf.train.Saver()
+        if model_file is not None:
+            self.restore_model(model_file)
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None, width, height, 1])
@@ -69,7 +68,7 @@ class PolicyValueNet:
 
     def _build_train_op(self):
         policy_loss = tf.negative(tf.reduce_mean(
-            tf.reduce_sum(tf.multiply(self.input_action, self.Policy_Network))))
+            tf.reduce_sum(tf.multiply(self.input_action, self.Policy_Network),1)))
         
         value_loss = tf.losses.mean_squared_error(self.input_win,
                                                   self.Value_Network)
@@ -102,3 +101,9 @@ class PolicyValueNet:
                              self.input_state: state_batch,
                              self.input_action: action_batch,
                              self.input_win: winner_batch})
+
+    def save_model(self, model_path):
+      self.saver.save(self.session, model_path)
+
+    def restore_model(self, model_path):
+      self.saver.restore(self.sessino, model_path)
