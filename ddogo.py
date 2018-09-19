@@ -7,7 +7,94 @@ class DDoGo(object):
 		self.brain = brain
 		self.state = None
 		self.available = None
+		self.count = 5
+		self.a_score_board = []
+		self.b_score_board = []
 
+	def get_action(self, player, state, available):
+		self.a_score_board = []
+		self.b_score_board = []
+		self.state = np.array(state)
+		if player == 2:
+			state = self.change_state(self.state)
+			player = 1
+
+		self.count_a_score()
+		self.count_b_score()
+		
+		cands = []
+		for i in range(self.height):
+			for j in range(self.width):
+				for k in range(4):
+					if self.b_score_board[k][i][j] >= 4:
+						cands.append([i, j])
+		if len(cands) > 0:
+			return self.choice(cands)
+
+		for i in range(self.height):
+			for j in range(self.width):
+				for k in range(4):
+					if self.a_score_board[k][i][j] >= 4:
+						cands.append([i, j])
+		if len(cands) > 0:
+			return self.choice(cands)
+
+		
+		for i in range(self.height):
+			for j in range(self.width):
+				for k in range(4):
+					if self.a_score_board[k][i][j] >= 3:
+						cands.append([i, j])
+		if len(cands) > 0:
+			return self.choice(cands)
+		
+
+		for i in range(self.height):
+			for j in range(self.width):
+				for k in range(4):
+					if self.a_score_board[k][i][j] >= 2:
+						cands.append([i, j])
+		if len(cands) > 0:
+			return self.choice(cands)
+
+		
+		for i in range(self.height):
+			for j in range(self.width):
+				for k in range(4):
+					if self.a_score_board[k][i][j] >= 1:
+						cands.append([i, j])
+		if len(cands) > 0:
+			return self.choice(cands)
+		
+
+		for i in range(self.height):
+			for j in range(self.width):
+				if self.state[i][j] == 0:
+					action = i * self.height + j
+
+		return action
+
+	def choice(self, cands):
+
+		max_score = -10000
+		best_action = None
+		for a in cands:
+			x = a[0]
+			y = a[1]
+
+			self.state[x][y] = 1
+			self.count_a_score()
+			self.count_b_score()
+			score = np.sum(self.a_score_board) - np.sum(self.b_score_board)
+			if score > max_score:
+				max_score = score
+				best_action = a
+			self.state[x][y] = 0
+
+		return a[0] * self.height + a[1]
+
+
+	"""
 	def get_action(self, player, state, available):
 		self.state = np.array(state)
 		self.available = np.array(available)
@@ -28,10 +115,169 @@ class DDoGo(object):
 		for i in range(len(actions)):
 			action_probs[actions[i]] = values[i]
 		move = np.argmax(action_probs)
-		print(self.state)
-		print(action_probs)
 
 		return move, action_probs
+	"""
+
+	def count_a_score(self):
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_row_score(self.state, i, j, 1)
+		self.a_score_board.append(temp)
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_col_score(self.state, i, j, 1)
+		self.a_score_board.append(temp)
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_bslash_score(self.state, i, j, 1)
+		self.a_score_board.append(temp)
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_slash_score(self.state, i, j, 1)
+		self.a_score_board.append(temp)
+
+	def count_b_score(self):
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_row_score(self.state, i, j, 2)
+		self.b_score_board.append(temp)
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_col_score(self.state, i, j, 2)
+		self.b_score_board.append(temp)
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_bslash_score(self.state, i, j, 2)
+		self.b_score_board.append(temp)
+		temp = np.zeros(self.height * self.width, dtype=int).reshape(
+			self.height, self.width)
+		for i in range(0, self.height):
+			for j in range(0, self.width):
+				temp[i][j] += self.count_slash_score(self.state, i, j, 2)
+		self.b_score_board.append(temp)
+
+	def count_row_score(self, state, x, y, player):
+		if state[x][y] != 0:
+			return 0
+
+		ret = 0
+		lo = x-1
+		count = 0
+		while lo >= 0 and (state[lo][y] == player or state[lo][y] == 3) \
+			and count < self.count:
+			lo -= 1
+			count += 1
+		lo += 1
+		ret += x - lo
+
+		hi = x+1
+		count = 0
+		while hi < self.height and (state[hi][y] == player or state[hi][y] == 3) \
+			and count < self.count:
+			hi += 1
+			count += 1
+		hi -= 1
+		ret += hi - x
+		return ret
+
+	def count_col_score(self, state, x, y, player):
+		if state[x][y] != 0:
+			return 0
+
+		ret = 0
+		lo = y-1
+		count = 0
+		while lo >= 0 and (state[x][lo] == player or state[x][lo] == 3) \
+			and count < self.count:
+			lo -= 1
+			count += 1
+		lo += 1
+		ret += y - lo
+
+		hi = y+1
+		count = 0
+		while hi < self.height and (state[x][hi] == player or state[x][hi] == 3) \
+			and count < self.count:
+			hi += 1
+			count += 1
+		hi -= 1
+		ret += hi - y
+		return ret
+
+	def count_bslash_score(self, state, x, y, player):
+		if state[x][y] != 0:
+			return 0
+
+		ret = 0
+		lo_x = x-1
+		lo_y = y-1
+		count = 0
+		while lo_x >= 0 and lo_y >= 0 and (state[lo_x][lo_y] == player or 
+			state[lo_x][lo_y] == 3) and count < self.count:
+			lo_x -= 1
+			lo_y -= 1
+			count += 1
+		lo_x += 1
+		lo_y += 1
+		ret += x - lo_x
+
+		hi_x = x+1
+		hi_y = y+1
+		count = 0
+		while hi_x < self.height and hi_y < self.height and (state[hi_x][hi_y] ==
+			player or state[hi_x][hi_y] == 3) and count < self.count:
+			hi_x += 1
+			hi_y += 1
+			count += 1
+		hi_x -= 1
+		hi_y -= 1
+		ret += hi_x - x
+		return ret
+
+	def count_slash_score(self, state, x, y, player):
+		if state[x][y] != 0:
+			return 0
+
+		ret = 0
+		lo_x = x+1
+		lo_y = y-1
+		count = 0
+		while lo_x < self.height and lo_y >= 0 and (state[lo_x][lo_y] == player or 
+			state[lo_x][lo_y] == 3) and count < self.count:
+			lo_x += 1
+			lo_y -= 1
+			count += 1
+		lo_x -= 1
+		lo_y += 1
+		ret += y - lo_y
+
+		hi_x = x-1
+		hi_y = y+1
+		count = 0
+		while hi_x >= 0 and hi_y < self.height and (state[hi_x][hi_y] == player
+			or state[hi_x][hi_y] == 3) and count < self.count:
+			hi_x -= 1
+			hi_y += 1
+			count += 1
+		hi_x += 1
+		hi_y -= 1
+		ret += x - hi_x
+		return ret
 
 	def minimax_search(self, state, available, n_count, x, y, depth):
 		action_probs, value = self.brain.policy_value(state)
@@ -69,13 +315,10 @@ class DDoGo(object):
 		return action_value, ret_value * (0.99 ** (self.max_depth - depth))
 
 	def change_state(self, state):
-		ret_state = np.array(state)
-		for i in range(self.height):
-			for j in range(self.width):
-				if ret_state[i][j] == 1:
-					ret_state[i][j] = 2
-				elif ret_state[i][j] == 2:
-					ret_state[i][j] = 1
+		ret_state = state
+		ret_state[ret_state == 2] = 4
+		ret_state[ret_state == 1] = 2
+		ret_state[ret_state == 4] = 1
 		return ret_state
 
 	def softmax(self, x):
@@ -107,9 +350,9 @@ class DDoGo(object):
 			tstate[x][yhi] == 3):
 			yhi += 1
 		yhi -= 1
-		if yhi - ylo + 1 == 6:
+		if yhi - ylo + 1 == self.count:
 			return player
-		if yhi - ylo + 1 > 6:
+		if yhi - ylo + 1 > self.count:
 			if player == 1:
 				return 2
 			return 1
@@ -125,9 +368,9 @@ class DDoGo(object):
 			tstate[xhi][y] == 3):
 			xhi += 1
 		xhi -= 1
-		if xhi - xlo + 1 == 6:
+		if xhi - xlo + 1 == self.count:
 			return player
-		if xhi - xlo + 1 > 6:
+		if xhi - xlo + 1 > self.count:
 			if player == 1:
 				return 2
 			return 1
@@ -149,9 +392,9 @@ class DDoGo(object):
 			yhi += 1
 		xhi -= 1
 		yhi -= 1
-		if xhi - xlo + 1 == 6:
+		if xhi - xlo + 1 == self.count:
 			return player
-		if xhi - xlo + 1 > 6:
+		if xhi - xlo + 1 > self.count:
 			if player == 1:
 				return 2
 			return 1
@@ -172,9 +415,9 @@ class DDoGo(object):
 			yhi -= 1
 		xhi -= 1
 		yhi += 1
-		if xhi - xlo + 1 == 6:
+		if xhi - xlo + 1 == self.count:
 			return player
-		if xhi - xlo + 1 > 6:
+		if xhi - xlo + 1 > self.count:
 			if player == 1:
 				return 2
 			return 1

@@ -39,8 +39,13 @@ class Sixmok:
 			turns += 1
 			
 			if self.pre_train == 0:
-				action, prob = self.ddoggo.get_action(self.player, 
-					self.state, self.available)
+				if turns == 1 and self.randomBlockingCnt == 0:
+					action = int(self.height/2) * self.height + int(self.width/2)
+				else:
+					action = self.ddoggo.get_action(self.player, 
+							self.state, self.available)
+				prob = np.zeros(self.height * self.width)
+				prob[action] = 0.42
 			else:
 				action = self.lastAdjPolicy(self.player)
 				prob = np.zeros(self.height * self.width)
@@ -62,11 +67,69 @@ class Sixmok:
 			else:
 				self.player = 1
 
+		for i in range(len(states)):
+			if current_players[i] == 2:
+				states[i] = self.change_state(states[i])
+
 		winners = np.zeros(len(current_players))
 		winners[np.array(current_players) == winner] = 1.0
 		winners[np.array(current_players) != winner] = -1.0
 		return winner, turns, states, current_players, action_probs, winners, \
-			self.state
+			self.state, action
+
+	def runSelfPlay2(self):
+		turns = 0
+		winner = 0
+		states, action_probs, current_players = [], [], []
+		print(self.state)
+		while winner == 0:
+			turns += 1
+			
+			if self.player == 1:
+				action = self.ddoggo.get_action(self.player, 
+					self.state, self.available)
+				prob = np.zeros(self.height * self.width)
+				prob[action] = 0.42
+			else:
+				x = int(input('x : '))
+				y = int(input('y : '))
+				action = x * self.height + y
+				prob = np.zeros(self.height * self.width)
+				prob[action] = 0.42
+
+			x = int(action / self.width)
+			y = action % self.height
+			states.append(np.array(self.state))
+			action_probs.append(prob)
+			current_players.append(self.player)
+
+			self.state[x][y] = self.player
+			print(self.state)
+			self.available[x][y] = 0
+			self.remain -= 1
+			self.gibo.append([x,y])
+			winner = self.checkFinish(self.player, x, y)
+			if self.player == 1:
+				self.player = 2
+			else:
+				self.player = 1
+
+		for i in range(len(states)):
+			if current_players[i] == 2:
+				states[i] = self.change_state(states[i])
+
+		winners = np.zeros(len(current_players))
+		winners[np.array(current_players) == winner] = 1.0
+		winners[np.array(current_players) != winner] = -1.0
+		return winner, turns, states, current_players, action_probs, winners, \
+			self.state, action
+
+	def change_state(self, state):
+		ret_state = state
+		ret_state[ret_state == 2] = 4
+		ret_state[ret_state == 1] = 2
+		ret_state[ret_state == 4] = 1
+		return ret_state
 
 	def checkFinish(self, player, x, y):
 		# up-down

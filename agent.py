@@ -17,8 +17,8 @@ TRAIN_INTERVAL = 4
 OBSERVE = 100
 DISCOUNT_RATE = 0.99
 
-WIDTH = 10
-HEIGHT = 10
+WIDTH = 19
+HEIGHT = 19
 NUM_ACTION = WIDTH * HEIGHT
 
 def augmenting_data(states, current_players, actions, winners):
@@ -77,8 +77,9 @@ def train():
             game.reset(0)
 
         winner, turns, states, current_players, actions, winners, \
-                last_state = game.runSelfPlay()
+                last_state, last_action = game.runSelfPlay()
         print('%d play : winner is %d' %(episode+1, winner))
+        print(int(last_action/HEIGHT), last_action%HEIGHT)
         print(last_state)
         total_reward_list.append(winners[0])
         if winner == 1:
@@ -100,8 +101,8 @@ def train():
         if winner == 1 or winner == 2:
             data.extend(play_data)
         
-        if (episode+1) % 100 == 0:
-            mini_batch = random.sample(data, 100)
+        if (episode+1) % 25 == 0:
+            mini_batch = random.sample(data, 512)
             states_batch = [d[0] for d in mini_batch]
             actions_batch = [d[1] for d in mini_batch]
             winners_batch = [d[2] for d in mini_batch]
@@ -123,9 +124,11 @@ def testPlay():
     brain = PolicyValueNet(sess, HEIGHT, WIDTH)
     game = Sixmok(WIDTH, HEIGHT, brain)
     
+    """
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state('model')
     saver.restore(sess, ckpt.model_checkpoint_path)
+    """
     
     one = 0
     two = 0
@@ -133,13 +136,16 @@ def testPlay():
     for episode in range(w):
         game.reset(0)
         winner, turns, states, current_players, actions, winners, \
-                last_state = game.runSelfPlay()
-        
+                last_state, last_action = game.runSelfPlay()
+       
+        """
         if w == 1:
             for i in range(len(states)):
                 print(states[i])
+        """
 
         print('%d play : winner is %d' %(episode+1, winner))
+        print(int(last_action/HEIGHT), last_action%WIDTH)
         print(states[len(states)-1])
         
         if winner == 1:
