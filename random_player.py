@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from game import Game
 
 class RandomPlayer:
 
@@ -21,5 +22,5 @@ class RandomPlayer:
 			r = random.randrange(0, self.height)
 			c = random.randrange(0, self.width)
 
-		action = r * self.height + self.width
+		action = r * self.height + c
 		return action, action_probs
