@@ -26,6 +26,11 @@ class PolicyValueNet:
         self.init = tf.global_variables_initializer()
         self.session.run(self.init)
         self.saver = tf.train.Saver()
+
+        self.value_rate = tf.placeholder(tf.float32)
+        tf.summary.scalar('win-rate', self.value_rate)
+        self.writer = tf.summary.FileWriter('logs', self.session.graph)
+        self.summary_merged = tf.summary.merge_all()
     
     def _build_common_network(self):
         model = tf.layers.conv2d(inputs=self.input_state,
@@ -111,4 +116,9 @@ class PolicyValueNet:
       self.saver.save(self.session, model_path, global_step=global_step)
 
     def restore_model(self, model_path):
-      self.saver.restore(self.sessino, model_path)
+      self.saver.restore(self.session, model_path)
+
+    def write_graph(self, value_rate, step):
+      self.summary = self.session.run(self.summary_merged,
+                      feed_dict={self.value_rate : value_rate})
+      self.writer.add_summary(self.summary, step)

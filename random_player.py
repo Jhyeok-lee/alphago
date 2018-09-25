@@ -4,7 +4,7 @@ from game import Game
 
 class RandomPlayer:
 
-	def __init__(self, height, width, max_state_size=7):
+	def __init__(self, height, width, max_state_size):
 		self.height = height
 		self.width = width
 		self.max_state_size = max_state_size

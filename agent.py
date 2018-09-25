@@ -12,30 +12,56 @@ class Agent(object):
 		self.episode_num = 5000
 		self.width = 11
 		self.height = 11
-		self.max_state_size = 7
+		self.max_state_size = 4
 		self.batch_size = 512
 		self.learning_rate = 0.001
 
-	def train():
+	def train(self):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
 				self.learning_rate)
 		game = Game(self.height, self.width, self.max_state_size)
-		player1 = RandomPlayer()
-		player2 = RandomPlayer()
+		player1 = RandomPlayer(self.height, self.width, self.max_state_size)
+		player2 = RandomPlayer(self.height, self.width, self.max_state_size)
+		player1win = 0
+		player2win = 0
 		data = deque(maxlen=10000)
 
 		for episode in range(self.episode_num):
+			black, white = None, None
+			if episode % 2 == 0:
+				black = player1
+				white = player2
+			else:
+				black = player2
+				white = player1
+
 			winner, game_states, action_probs, values = \
-				game.play(player1, player2)
+				game.play(black, white)
 
 			if winner == 2:
 				continue
 
+			if episode % 2 == 0:
+				if winner == 1:
+					player1win += 1
+				else:
+					player2win += 1
+			else:
+				if winner == 1:
+					player2win += 1
+				else:
+					player1win += 1
+
 			augmented_states, augmented_actions, augmented_values = \
-				augmenting_data(game_states, action_probs, values)
+				self.augmenting_data(game_states, action_probs, values)
 			play_data = list(zip(augmented_states, augmented_actions,
 				augmented_values))[:]
 			data.extend(play_data)
+
+			if (episode+1) % 10 == 0:
+				model.write_graph(player2win/10 ,episode+1)
+				player1win = 0
+				player2win = 0
 
 			if (episode+1) % 25 == 0:
 				mini_batch = random.sample(data, self.batch_size)
@@ -45,10 +71,12 @@ class Agent(object):
 				model.train(states_batch, actions_batch, values_batch)
 
 			if (episode+1) % 100 == 0:
-				model_path = "model/" + str(episode+1) + ".model"
+				print("Player 1 win : ", player1win)
+				print("Player 2 win : ", player2win)
+				model_path = "data/" + str(episode+1) + ".model"
 				model.save_model(model_path, episode+1)
 
-	def augmenting_data(states, action_probs, values):
+	def augmenting_data(self, states, action_probs, values):
 		augmented_states = []
 		augmented_actions = []
 		augmented_values = []
@@ -64,13 +92,15 @@ class Agent(object):
 					rotate_state.append(np.rot90(k, j))
 				rotate_action = np.rot90(action_prob, j)
 				augmented_states.append(rotate_state)
-				augmented_actions.append(rotate_action)
+				augmented_actions.append(rotate_action.reshape(
+					self.height * self.width))
 				augmented_values.append(value)
 
 			flip_state = np.fliplr(state)
 			flip_action = np.fliplr(action_prob)
 			augmented_states.append(flip_state)
-			augmented_actions.append(flip_action)
+			augmented_actions.append(flip_action.reshape(
+				self.height * self.width))
 			augmented_values.append(value)
 
 		return augmented_states, augmented_actions, augmented_values
