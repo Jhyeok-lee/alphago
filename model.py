@@ -5,18 +5,19 @@ class PolicyValueNet:
     def __init__(self, width, height, max_state_size, learning_rate,
                  model_file=None):
         self.session = tf.Session()
-        self.width = width
         self.height = height
+        self.width = width
         self.n_action = width * height
-        self.saver = tf.train.Saver()
         self.learning_rate = learning_rate
+        self.input_size = max_state_size*2 + 1
         if model_file is not None:
             self.restore_model(model_file)
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
-        self.input_state = tf.placeholder(tf.float32, [None, width, height, 1])
+        self.input_state = tf.placeholder(tf.float32, [None, 
+                              self.input_size, width, height])
         self.input_action = tf.placeholder(tf.float32, [None, width * height])
-        self.input_win = tf.placeholder(tf.float32, [None, 1])
+        self.input_value = tf.placeholder(tf.float32, [None, 1])
 
         self.Common_Network = self._build_common_network()
         self.Policy_Network = self._build_policy_network()
@@ -24,10 +25,11 @@ class PolicyValueNet:
         self.train_op = self._build_train_op()
         self.init = tf.global_variables_initializer()
         self.session.run(self.init)
+        self.saver = tf.train.Saver()
     
     def _build_common_network(self):
         model = tf.layers.conv2d(inputs=self.input_state,
-                                      filters=32, kernel_size=[3, 3],
+                                      filters=64, kernel_size=[3, 3],
                                       padding="same",
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
@@ -37,7 +39,12 @@ class PolicyValueNet:
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
         model = tf.layers.conv2d(inputs=model,
-                                      filters=128, kernel_size=[3, 3],
+                                      filters=64, kernel_size=[3, 3],
+                                      padding="same",
+                                      activation=tf.nn.relu,
+                                      kernel_initializer=self.initializer)
+        model = tf.layers.conv2d(inputs=model,
+                                      filters=64, kernel_size=[3, 3],
                                       padding="same",
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
@@ -45,11 +52,11 @@ class PolicyValueNet:
 
     def _build_policy_network(self):
         model = tf.layers.conv2d(inputs=self.Common_Network,
-                                      filters=4, kernel_size=[1, 1],
+                                      filters=2, kernel_size=[1, 1],
                                       padding="same",
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
-        model = tf.reshape(model, [-1, 4 * self.width * self.height])
+        model = tf.contrib.layers.flatten(model)
         model = tf.layers.dense(inputs=model, units=self.n_action,
                                 activation=tf.nn.log_softmax)
 
@@ -57,11 +64,11 @@ class PolicyValueNet:
 
     def _build_value_network(self):
         model = tf.layers.conv2d(inputs=self.Common_Network,
-                                      filters=2, kernel_size=[1, 1],
+                                      filters=1, kernel_size=[1, 1],
                                       padding="same",
                                       activation=tf.nn.relu,
                                       kernel_initializer=self.initializer)
-        model = tf.reshape(model, [-1, 2 * self.width * self.height])
+        model = tf.contrib.layers.flatten(model)
         model = tf.layers.dense(model, 64, activation=tf.nn.relu)
         model = tf.layers.dense(model, 1, activation=tf.nn.tanh)
 
@@ -71,7 +78,7 @@ class PolicyValueNet:
         policy_loss = tf.negative(tf.reduce_mean(
             tf.reduce_sum(tf.multiply(self.input_action, self.Policy_Network),1)))
         
-        value_loss = tf.losses.mean_squared_error(self.input_win,
+        value_loss = tf.losses.mean_squared_error(self.input_value,
                                                   self.Value_Network)
 
         l2_penalty_beta = 1e-4
@@ -86,22 +93,19 @@ class PolicyValueNet:
         return train_op
 
     def policy_value(self, state):
-        state = np.reshape(state,(self.width ,self.height,1))
         action_probs, value = self.session.run(
             [self.Policy_Network, self.Value_Network], 
             feed_dict = {self.input_state : [state]})
         action_probs = np.exp(action_probs)
         return action_probs[0], value
 
-    def train(self, state_batch, action_batch, winner_batch):
-      state_batch = np.array(state_batch).reshape(-1, self.width,
-                    self.height, 1)
-      winner_batch = np.array(winner_batch).reshape(-1, 1)
+    def train(self, state_batch, action_batch, value_batch):
+      value_batch = np.array(value_batch).reshape(-1, 1)
       self.session.run(self.train_op,
                          feed_dict={
                              self.input_state: state_batch,
                              self.input_action: action_batch,
-                             self.input_win: winner_batch})
+                             self.input_value: value_batch})
 
     def save_model(self, model_path, global_step):
       self.saver.save(self.session, model_path, global_step=global_step)
