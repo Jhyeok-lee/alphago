@@ -1,7 +1,7 @@
 import numpy as np
 
 class Game:
-	def __init__(self, height, width, max_state_size=7):
+	def __init__(self, height, width, max_state_size):
 		self.width = width
 		self.height = height
 		self.max_state_size = max_state_size
@@ -45,7 +45,7 @@ class Game:
 
 		if winner == 2:
 			print("Draw")
-			return [], [], []
+			return 2, [], [], []
 
 		if winner == 0:
 			print("White Win")
@@ -56,7 +56,7 @@ class Game:
 		values[np.array(current_players) == winner] = 1.0
 		values[np.array(current_players) != winner] = -1.0
 
-		return game_states, action_probs, values
+		return winner, game_states, action_probs, values
 
 	def get_current_state(self, player):
 		ret = []

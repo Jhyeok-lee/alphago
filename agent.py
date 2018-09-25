@@ -14,9 +14,11 @@ class Agent(object):
 		self.height = 11
 		self.max_state_size = 7
 		self.batch_size = 512
+		self.learning_rate = 0.001
 
 	def train():
-		model = PolicyValueNet(self.height, self.width, self.max_state_size)
+		model = PolicyValueNet(self.height, self.width, self.max_state_size,
+				self.learning_rate)
 		game = Game(self.height, self.width, self.max_state_size)
 		player1 = RandomPlayer()
 		player2 = RandomPlayer()

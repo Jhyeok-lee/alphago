@@ -2,13 +2,14 @@ import tensorflow as tf
 import numpy as np
 
 class PolicyValueNet:
-    def __init__(self, width, height, model_file=None):
+    def __init__(self, width, height, max_state_size, learning_rate,
+                 model_file=None):
         self.session = tf.Session()
         self.width = width
         self.height = height
         self.n_action = width * height
-        self.LR = 0.001
         self.saver = tf.train.Saver()
+        self.learning_rate = learning_rate
         if model_file is not None:
             self.restore_model(model_file)
 
@@ -79,7 +80,7 @@ class PolicyValueNet:
             [tf.nn.l2_loss(v) for v in vars if 'bias' not in v.name.lower()])
         
         loss = value_loss + policy_loss + l2_penalty
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.LR)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         train_op = optimizer.minimize(loss)
 
         return train_op
@@ -102,8 +103,8 @@ class PolicyValueNet:
                              self.input_action: action_batch,
                              self.input_win: winner_batch})
 
-    def save_model(self, model_path):
-      self.saver.save(self.session, model_path)
+    def save_model(self, model_path, global_step):
+      self.saver.save(self.session, model_path, global_step=global_step)
 
     def restore_model(self, model_path):
       self.saver.restore(self.sessino, model_path)
