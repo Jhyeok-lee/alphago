@@ -41,9 +41,6 @@ class Agent(object):
 			winner, game_states, action_probs, values = \
 				game.play(black, white)
 
-			if winner == 2:
-				continue
-
 			if episode % 2 == 0:
 				if winner == 1:
 					player1win += 1
@@ -86,7 +83,8 @@ class Agent(object):
 
 		for i in range(0, len(states)):
 			state = states[i]
-			action_prob = action_probs[i]
+			action_prob = action_probs[i].reshape((self.height,
+				self.width))
 			value = values[i]
 
 			for j in [1, 2, 3, 4]:
