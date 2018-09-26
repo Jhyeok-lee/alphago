@@ -6,14 +6,14 @@ class Game:
 
 	def play(self, black_player, white_player):
 		self.state.reset()
-		player = 1
 		players = [white_player, black_player]
 		game_states = []
 		action_probs = []
 		current_players = []
 		winner = -1
 		while True:
-			current_state = self.state.get_current_state(player)
+			player = self.state.get_current_player()
+			current_state = self.state.get_current_state()
 			action, probs = players[player].get_action(
 				self.state)
 
@@ -21,10 +21,8 @@ class Game:
 			action_probs.append(probs)
 			current_players.append(player)
 
-			winner = self.state.do_action(player, action)
-			if winner == -1:
-				player ^= 1
-			else:
+			winner = self.state.do_action(action)
+			if winner != -1:
 				break
 
 		if winner == 2:
