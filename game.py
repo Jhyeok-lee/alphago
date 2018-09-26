@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 class Game:
 	def __init__(self, state):
@@ -14,8 +15,12 @@ class Game:
 		while True:
 			player = self.state.get_current_player()
 			current_state = self.state.get_current_state()
+			start_time = time.time()
 			action, probs = players[player].get_action(
 				self.state)
+			print(time.time() - start_time)
+			print(self.state.get_game_state())
+			print(action)
 
 			game_states.append(current_state)
 			action_probs.append(probs)
@@ -24,10 +29,6 @@ class Game:
 			winner = self.state.do_action(action)
 			if winner != -1:
 				break
-
-		if winner == 2:
-			print("Draw")
-			return 2, [], [], []
 
 		if winner == 0:
 			print("White Win")
