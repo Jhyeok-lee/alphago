@@ -6,6 +6,7 @@ from collections import deque
 from game import Game
 from model import PolicyValueNet
 from random_player import RandomPlayer
+from state import State
 
 class Agent(object):
 	def __init__(self):
@@ -19,7 +20,8 @@ class Agent(object):
 	def train(self):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
 				self.learning_rate)
-		game = Game(self.height, self.width, self.max_state_size)
+		state =  State(self.height, self.width, self.max_state_size)
+		game = Game(state)
 		player1 = RandomPlayer(self.height, self.width, self.max_state_size)
 		player2 = RandomPlayer(self.height, self.width, self.max_state_size)
 		player1win = 0
