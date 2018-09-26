@@ -15,11 +15,15 @@ class State(object):
 		self.black_states.clear()
 		self.white_states.clear()
 		self.counts = self.height * self.width
+		self.available_actions = list(range(self.height * self.height))
 		for i in range(self.max_state_size):
 			zero_state_black = np.zeros((self.height, self.width))
 			zero_state_white = np.zeros((self.height, self.width))
 			self.black_states.append(zero_state_black)
 			self.white_states.append(zero_state_white)
+
+	def get_available_actions(self):
+		return self.available_actions
 
 	def get_current_state(self, player):
 		ret = []
@@ -44,6 +48,7 @@ class State(object):
 		else:
 			state = np.array(self.white_states[len(self.white_states)-1])
 		state[r][c] = 1
+		self.available_actions.remove(r * self.height + c)
 		self.counts -= 1
 		if player == 1:
 			self.black_states.append(state)
