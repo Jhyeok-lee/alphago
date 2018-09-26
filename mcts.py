@@ -13,31 +13,30 @@ class Node(object):
 		self.P = prior_prob
 
 	def select(self):
-		max_q_u = 0.0
-		action = -1
-		for a in self.children:
-			q_u = self.children[a].Q + self.children[a].U
-			if q_u > max_q_u:
-				max_q_u = q_u
-				action = a
+		return max(self.children.items(),
+			key=lambda action_node: action_node[1].get_value())
 
-		return action, self.children[action]
-
-	def expand(self, actions, action_probs):
-		for action, prob in actions, action_probs:
+	def expand(self, actions_to_probs):
+		for action, prob in actions_to_probs:
 			if action not in self.children:
 				self.children[action] = Node(self, prob)
+
+	def get_value(self):
+		self.U = 5 * self.P * np.sqrt(self.parent.N) / (1 + self.N)
+		return self.Q + self.U
 
 	def update(self, value):
 		self.N += 1
 		self.W += value
-		self.Q = self.W / N
-		self.U = self.P * np.sqrt(self.parent.N) / (1 + self.N)
+		self.Q = self.W / self.N
+		if self.parent is not None:
+			self.U = self.P * np.sqrt(self.parent.N) / (1 + self.N)
 
 	def backpropagation(self, value):
 		if self.parent != None:
 			self.parent.backpropagation(-value)
 		self.update(value)
+
 
 class MCTS(object):
 
@@ -59,14 +58,14 @@ class MCTS(object):
 		node = self.root
 		winner = -1
 		while True:
-			if node.children == {}:
+			if len(node.children) == 0:
 				break
 			action, node = node.select()
 			winner = state.do_action(action)
 
-		actions, action_probs, value = self.query_policy_value(state)
+		action_probs, value = self.query_policy_value(state)
 		if winner == -1:
-			node.expand(actions, action_probs)
+			node.expand(action_probs)
 		elif winner == 2:
 			value = 0
 		elif winner == state.get_current_player():
@@ -86,7 +85,8 @@ class MCTS(object):
 		actions_to_visits = [(action, node.N)
 					for action, node in self.root.children.items()]
 		actions, visits = zip(*actions_to_visits)
-		action_probs = softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
+		action_probs = self.softmax(1.0/temp *
+			np.log(np.array(visits) + 1e-10))
 
 		return actions, action_probs
 
@@ -94,9 +94,11 @@ class MCTS(object):
 		available_actions = state.get_available_actions()
 		current_state = state.get_current_state()
 		action_probs, value = self.policy_value(current_state)
-		return available_actions, action_probs[available_actions], value
+		actions_to_probs = \
+			zip(available_actions, action_probs[available_actions])
+		return actions_to_probs, value
 
-	def softmax(x):
+	def softmax(self, x):
 		ret = np.exp(x - np.max(x))
 		ret /= np.sum(ret)
 		return ret
