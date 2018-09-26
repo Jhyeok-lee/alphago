@@ -52,6 +52,9 @@ class Agent(object):
 				else:
 					player1win += 1
 
+			if winner == 2:
+				continue
+
 			augmented_states, augmented_actions, augmented_values = \
 				self.augmenting_data(game_states, action_probs, values)
 			play_data = list(zip(augmented_states, augmented_actions,
