@@ -7,6 +7,7 @@ from game import Game
 from model import PolicyValueNet
 from random_player import RandomPlayer
 from state import State
+from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
@@ -22,8 +23,8 @@ class Agent(object):
 				self.learning_rate)
 		state =  State(self.height, self.width, self.max_state_size)
 		game = Game(state)
-		player1 = RandomPlayer(self.height, self.width, self.max_state_size)
-		player2 = RandomPlayer(self.height, self.width, self.max_state_size)
+		player1 = MCTS(model.policy_value)
+		player2 = MCTS(model.policy_value)
 		player1win = 0
 		player2win = 0
 		data = deque(maxlen=10000)
