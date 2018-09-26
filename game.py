@@ -15,7 +15,7 @@ class Game:
 		while True:
 			current_state = self.state.get_current_state(player)
 			action, probs = players[player].get_action(
-				current_state)
+				self.state)
 
 			game_states.append(current_state)
 			action_probs.append(probs)
