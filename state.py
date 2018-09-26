@@ -23,6 +23,12 @@ class State(object):
 			self.black_states.append(zero_state_black)
 			self.white_states.append(zero_state_white)
 
+	def get_game_state(self):
+		p = np.zeros((self.height, self.width))
+		p[self.black_states[len(self.black_states)-1] == 1] = 1
+		p[self.white_states[len(self.white_states)-1] == 1] = 2
+		return p
+
 	def get_available_actions(self):
 		return self.available_actions
 
@@ -61,8 +67,14 @@ class State(object):
 			self.white_states.append(state)
 			self.white_states.pop(0)
 
-		if self.is_win(state, r, c):
+		win = self.is_win(state, r, c)
+		if win == 1:
 			return self.player
+		elif win == 2:
+			if self.player == 0:
+				return 1
+			else:
+				return 0
 
 		if self.counts == 0:
 			return 2
@@ -80,8 +92,12 @@ class State(object):
 		while hi_r < self.height and state[hi_r][c] == 1:
 			hi_r += 1
 		hi_r -= 1
-		if hi_r - lo_r + 1 == 5:
-			return True
+		counts = hi_r - lo_r + 1
+		if counts == 5:
+			return 1
+		elif counts > 5:
+			return 2
+
 
 		lo_c = c
 		hi_c = c
@@ -91,9 +107,11 @@ class State(object):
 		while hi_c < self.width and state[r][hi_c] == 1:
 			hi_c += 1
 		hi_c -= 1
-
-		if hi_c - lo_c + 1 == 5:
-			return True
+		counts = hi_c - lo_c + 1
+		if counts == 5:
+			return 1
+		elif counts > 5:
+			return 2
 
 		lo_r = r
 		hi_r = r
@@ -110,9 +128,11 @@ class State(object):
 			hi_c += 1
 		hi_r -= 1
 		hi_c -= 1
-
-		if hi_r - lo_r + 1 == 5:
-			return True
+		counts = hi_r - lo_r + 1
+		if counts == 5:
+			return 1
+		elif counts > 5:
+			return 2
 
 		lo_r = r
 		hi_r = r
@@ -129,8 +149,10 @@ class State(object):
 			hi_c -= 1
 		hi_r -= 1
 		hi_c += 1
+		counts = hi_r - lo_r + 1
+		if counts == 5:
+			return 1
+		elif counts > 5:
+			return 2
 
-		if hi_r - lo_r + 1 == 5:
-			return True
-
-		return False
+		return 0
