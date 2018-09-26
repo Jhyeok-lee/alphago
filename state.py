@@ -9,12 +9,14 @@ class State(object):
 		self.black_states = []
 		self.white_states = []
 		self.counts = height * width
+		self.gibo = []
 		self.reset()
 
 	def reset(self):
 		self.player = 1
 		self.black_states.clear()
 		self.white_states.clear()
+		self.gibo.clear()
 		self.counts = self.height * self.width
 		self.available_actions = list(range(self.height * self.height))
 		for i in range(self.max_state_size):
@@ -50,6 +52,7 @@ class State(object):
 		return ret
 
 	def do_action(self, action):
+		self.gibo.append(action)
 		r = int(action / self.height)
 		c = action % self.width
 		state = None
@@ -97,7 +100,6 @@ class State(object):
 			return 1
 		elif counts > 5:
 			return 2
-
 
 		lo_c = c
 		hi_c = c
