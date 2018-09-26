@@ -30,7 +30,7 @@ class Node(object):
 		self.W += value
 		self.Q = self.W / self.N
 		if self.parent is not None:
-			self.U = self.P * np.sqrt(self.parent.N) / (1 + self.N)
+			self.U = 5 * self.P * np.sqrt(self.parent.N) / (1 + self.N)
 
 	def backpropagation(self, value):
 		if self.parent != None:
@@ -40,7 +40,7 @@ class Node(object):
 
 class MCTS(object):
 
-	def __init__(self, policy_value, simulation_count=1600):
+	def __init__(self, policy_value, simulation_count=200):
 		self.root = Node(None, 1.0)
 		self.policy_value = policy_value
 		self.simulation_count = simulation_count
@@ -68,7 +68,7 @@ class MCTS(object):
 			node.expand(action_probs)
 		elif winner == 2:
 			value = 0
-		elif winner == state.get_current_player():
+		elif winner != state.get_current_player():
 			value = 1
 		else:
 			value = -1
