@@ -56,13 +56,11 @@ class Agent(object):
 				actions_batch = [d[1] for d in mini_batch]
 				values_batch = [d[2] for d in mini_batch]
 				loss, entropy = \
-					model.train(states_batch, actions_batch, values_batch)
+					model.train(states_batch, actions_batch, values_batch, episode+1)
 				print("loss : ", loss)
 				print("entropy : ", entropy)
 
 			if (episode+1) % 100 == 0:
-				print("Player 1 win : ", player1win)
-				print("Player 2 win : ", player2win)
 				model_path = "data/" + str(episode+1) + ".model"
 				model.save_model(model_path, episode+1)
 				game_log_path = "game_log/" + str(episode+1) + ".gibo"
