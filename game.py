@@ -11,6 +11,8 @@ class Game:
 		game_states = []
 		action_probs = []
 		current_players = []
+		time_per_turn = []
+		game_time = time.time()
 		winner = -1
 		while True:
 			player = self.state.get_current_player()
@@ -18,9 +20,7 @@ class Game:
 			start_time = time.time()
 			action, probs = players[player].get_action(
 				self.state)
-			print(time.time() - start_time)
-			print(self.state.get_game_state())
-			print(action)
+			time_per_turn.append(time.time() - start_time)
 
 			game_states.append(current_state)
 			action_probs.append(probs)
@@ -30,11 +30,8 @@ class Game:
 			if winner != -1:
 				break
 
-		if winner == 0:
-			print("White Win")
-		else:
-			print("Black Win")
-
+		print("Average time of per turn : ", np.mean(time_per_turn))
+		print("Game time : ", time.time() - game_time)
 		values = np.zeros(len(current_players))
 		values[np.array(current_players) == winner] = 1.0
 		values[np.array(current_players) != winner] = -1.0
