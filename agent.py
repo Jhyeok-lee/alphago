@@ -26,8 +26,6 @@ class Agent(object):
 		game = Game(state)
 		player1 = MCTS(model.policy_value, self.simulation_count)
 		player2 = MCTS(model.policy_value, self.simulation_count)
-		player1win = 0
-		player2win = 0
 		data = deque(maxlen=10000)
 
 		for episode in range(self.episode_num):
@@ -42,19 +40,9 @@ class Agent(object):
 			winner, game_states, action_probs, values = \
 				game.play(black, white)
 
-			if episode % 2 == 0:
-				if winner == 1:
-					player1win += 1
-				else:
-					player2win += 1
-			else:
-				if winner == 1:
-					player2win += 1
-				else:
-					player1win += 1
-
 			if winner == 2:
 				continue
+			print("Winner : ", winner)
 
 			augmented_states, augmented_actions, augmented_values = \
 				self.augmenting_data(game_states, action_probs, values)
@@ -63,16 +51,14 @@ class Agent(object):
 			data.extend(play_data)
 
 			if (episode+1) % 10 == 0:
-				model.write_graph(player2win/10 ,episode+1)
-				player1win = 0
-				player2win = 0
-
-			if (episode+1) % 25 == 0:
 				mini_batch = random.sample(data, self.batch_size)
 				states_batch = [d[0] for d in mini_batch]
 				actions_batch = [d[1] for d in mini_batch]
 				values_batch = [d[2] for d in mini_batch]
-				model.train(states_batch, actions_batch, values_batch)
+				loss, entropy = \
+					model.train(states_batch, actions_batch, values_batch)
+				print("loss : ", loss)
+				print("entropy : ", entropy)
 
 			if (episode+1) % 100 == 0:
 				print("Player 1 win : ", player1win)
