@@ -23,13 +23,16 @@ class PolicyValueNet:
         self.Policy_Network = self._build_policy_network()
         self.Value_Network = self._build_value_network()
         self.train_op = self._build_train_op()
+        self.entropy = self._build_policy_entropy()
         self.init = tf.global_variables_initializer()
         self.session.run(self.init)
         self.saver = tf.train.Saver()
 
-        self.value_rate = tf.placeholder(tf.float32)
-        tf.summary.scalar('win-rate', self.value_rate)
-        self.writer = tf.summary.FileWriter('logs', self.session.graph)
+        self.loss_data = tf.placeholder(tf.float32)
+        self.entropy_data = tf.placeholder(tf.float32)
+        tf.summary.scalar('loss', self.loss_data)
+        tf.summary.scalar('entropy', self.entropy_data)
+        self.writer = tf.summary.FileWriter('graph', self.session.graph)
         self.summary_merged = tf.summary.merge_all()
     
     def _build_common_network(self):
@@ -91,11 +94,15 @@ class PolicyValueNet:
         l2_penalty = l2_penalty_beta * tf.add_n(
             [tf.nn.l2_loss(v) for v in vars if 'bias' not in v.name.lower()])
         
-        loss = value_loss + policy_loss + l2_penalty
+        self.loss = value_loss + policy_loss + l2_penalty
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
-        train_op = optimizer.minimize(loss)
+        train_op = optimizer.minimize(self.loss)
 
         return train_op
+
+    def _build_policy_entropy(self):
+      return tf.negative(tf.reduce_mean(
+        tf.reduce_sum(tf.exp(self.Policy_Network) * self.Policy_Network, 1)))
 
     def policy_value(self, state):
         action_probs, value = self.session.run(
@@ -104,21 +111,22 @@ class PolicyValueNet:
         action_probs = np.exp(action_probs)
         return action_probs[0], value
 
-    def train(self, state_batch, action_batch, value_batch):
+    def train(self, state_batch, action_batch, value_batch, step):
       value_batch = np.array(value_batch).reshape(-1, 1)
-      self.session.run(self.train_op,
+      loss, entropy, _ = \
+        self.session.run([self.loss, self.entropy, self.train_op],
                          feed_dict={
                              self.input_state: state_batch,
                              self.input_action: action_batch,
                              self.input_value: value_batch})
+      self.summary = self.session.run(self.summary_merged,
+                      feed_dict={self.loss_data : loss,
+                                 self.entropy_data : entropy})
+      self.writer.add_summary(self.summary, step)
+      return loss, entropy
 
     def save_model(self, model_path, global_step):
       self.saver.save(self.session, model_path, global_step=global_step)
 
     def restore_model(self, model_path):
       self.saver.restore(self.session, model_path)
-
-    def write_graph(self, value_rate, step):
-      self.summary = self.session.run(self.summary_merged,
-                      feed_dict={self.value_rate : value_rate})
-      self.writer.add_summary(self.summary, step)
