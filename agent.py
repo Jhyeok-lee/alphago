@@ -17,14 +17,15 @@ class Agent(object):
 		self.max_state_size = 4
 		self.batch_size = 512
 		self.learning_rate = 0.001
+		self.simulation_count = 200
 
 	def train(self):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
 				self.learning_rate)
 		state =  State(self.height, self.width, self.max_state_size)
 		game = Game(state)
-		player1 = MCTS(model.policy_value)
-		player2 = MCTS(model.policy_value)
+		player1 = MCTS(model.policy_value, self.simulation_count)
+		player2 = MCTS(model.policy_value, self.simulation_count)
 		player1win = 0
 		player2win = 0
 		data = deque(maxlen=10000)
@@ -78,6 +79,10 @@ class Agent(object):
 				print("Player 2 win : ", player2win)
 				model_path = "data/" + str(episode+1) + ".model"
 				model.save_model(model_path, episode+1)
+				game_log_path = "game_log/" + str(episode+1) + ".gibo"
+				f = open(game_log_path, 'w')
+				f.write(' '.join(e for e in state.gibo))
+				f.close()
 
 	def augmenting_data(self, states, action_probs, values):
 		augmented_states = []
