@@ -11,7 +11,7 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.episode_num = 5000
+		self.episode_num = 500
 		self.width = 11
 		self.height = 11
 		self.max_state_size = 4
@@ -19,7 +19,11 @@ class Agent(object):
 		self.learning_rate = 0.001
 		self.simulation_count = 200
 
-	def train(self, model_path=None):
+	def train(self, start_step=0):
+		if start_step != 0:
+			model_path = 'data/model-' + str(start_step-1)
+		else:
+			model_path = None
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
 				self.learning_rate, model_path=model_path, train_mode=True)
 		state =  State(self.height, self.width, self.max_state_size)
@@ -29,6 +33,7 @@ class Agent(object):
 		data = deque(maxlen=10000)
 
 		for episode in range(self.episode_num):
+			episode += start_step-1
 			black, white = None, None
 			if episode % 2 == 0:
 				black = player1
