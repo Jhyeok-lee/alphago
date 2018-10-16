@@ -19,9 +19,9 @@ class Agent(object):
 		self.learning_rate = 0.001
 		self.simulation_count = 200
 
-	def train(self):
+	def train(self, model_path=None):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
-				self.learning_rate)
+				self.learning_rate, model_path=model_path, train_mode=True)
 		state =  State(self.height, self.width, self.max_state_size)
 		game = Game(state)
 		player1 = MCTS(model.policy_value, self.simulation_count)
@@ -61,12 +61,8 @@ class Agent(object):
 				print("entropy : ", entropy)
 
 			if (episode+1) % 100 == 0:
-				model_path = "data/" + str(episode+1) + ".model"
+				model_path = "data/model"
 				model.save_model(model_path, episode+1)
-				game_log_path = "game_log/" + str(episode+1) + ".gibo"
-				f = open(game_log_path, 'w')
-				f.write(' '.join(e for e in state.gibo))
-				f.close()
 
 	def augmenting_data(self, states, action_probs, values):
 		augmented_states = []
