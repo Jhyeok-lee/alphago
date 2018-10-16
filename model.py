@@ -3,15 +3,13 @@ import numpy as np
 
 class PolicyValueNet:
     def __init__(self, width, height, max_state_size, learning_rate,
-                 model_file=None):
+                 model_path=None, train_mode=True):
         self.session = tf.Session()
         self.height = height
         self.width = width
         self.n_action = width * height
         self.learning_rate = learning_rate
         self.input_size = max_state_size*2 + 1
-        if model_file is not None:
-            self.restore_model(model_file)
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None, 
@@ -25,15 +23,19 @@ class PolicyValueNet:
         self.train_op = self._build_train_op()
         self.entropy = self._build_policy_entropy()
         self.init = tf.global_variables_initializer()
+        self.global_step = tf.Variable(0, name='global_step', trainable=False)
         self.session.run(self.init)
         self.saver = tf.train.Saver()
+        if model_path is not None:
+          self.restore_model(model_path)
 
-        self.loss_data = tf.placeholder(tf.float32)
-        self.entropy_data = tf.placeholder(tf.float32)
-        tf.summary.scalar('loss', self.loss_data)
-        tf.summary.scalar('entropy', self.entropy_data)
-        self.writer = tf.summary.FileWriter('graph', self.session.graph)
-        self.summary_merged = tf.summary.merge_all()
+        if train_mode:
+          self.loss_data = tf.placeholder(tf.float32)
+          self.entropy_data = tf.placeholder(tf.float32)
+          tf.summary.scalar('loss', self.loss_data)
+          tf.summary.scalar('entropy', self.entropy_data)
+          self.writer = tf.summary.FileWriter('graph', self.session.graph)
+          self.summary_merged = tf.summary.merge_all()
     
     def _build_common_network(self):
         model = tf.layers.conv2d(inputs=self.input_state,
@@ -122,11 +124,15 @@ class PolicyValueNet:
       self.summary = self.session.run(self.summary_merged,
                       feed_dict={self.loss_data : loss,
                                  self.entropy_data : entropy})
-      self.writer.add_summary(self.summary, step)
+      self.global_step += step
+      self.write_graph()
       return loss, entropy
 
-    def save_model(self, model_path, global_step):
-      self.saver.save(self.session, model_path, global_step=global_step)
+    def write_graph(self):
+      self.writer.add_summary(self.summary_merged, self.global_step)
+
+    def save_model(self, model_path):
+      self.saver.save(self.session, model_path, global_step=self.global_step)
 
     def restore_model(self, model_path):
       self.saver.restore(self.session, model_path)
