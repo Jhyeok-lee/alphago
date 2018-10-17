@@ -11,7 +11,7 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.episode_num = 500
+		self.episode_num = 100
 		self.width = 11
 		self.height = 11
 		self.max_state_size = 4
@@ -32,8 +32,10 @@ class Agent(object):
 		player2 = MCTS(model.policy_value, self.simulation_count)
 		data = deque(maxlen=10000)
 
-		for episode in range(self.episode_num):
-			episode += start_step-1
+		episode = 0
+		if start_step > 0:
+			episode = start_step - 1
+		while episode < self.episode_num + start_step:
 			black, white = None, None
 			if episode % 2 == 0:
 				black = player1
@@ -68,6 +70,8 @@ class Agent(object):
 			if (episode+1) % 100 == 0:
 				model_path = "data/model"
 				model.save_model(model_path, episode+1)
+
+			episode += 1
 
 	def augmenting_data(self, states, action_probs, values):
 		augmented_states = []

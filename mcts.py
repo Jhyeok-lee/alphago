@@ -40,19 +40,12 @@ class Node(object):
 
 class MCTS(object):
 
-	def __init__(self, policy_value, simulation_count=200):
+	def __init__(self, policy_value, simulation_count=200,
+			exploration=True):
 		self.root = Node(None, 1.0)
 		self.policy_value = policy_value
 		self.simulation_count = simulation_count
-
-	def get_action(self, state):
-		self.root = Node(None, 1.0)
-		available_actions = state.get_available_actions()
-		action_probs = np.zeros(state.height * state.width)
-		actions, probs = self.search(state)
-		action_probs[list(actions)] = probs
-		action = np.random.choice(actions, p=probs)
-		return action, action_probs
+		self.exploration = exploration
 
 	def simulation(self, state):
 		node = self.root
@@ -76,7 +69,6 @@ class MCTS(object):
 		node.backpropagation(-value)
 
 	def search(self, origin_state):
-		
 		for i in range(self.simulation_count):
 			state = copy.deepcopy(origin_state)
 			self.simulation(state)
@@ -89,6 +81,22 @@ class MCTS(object):
 			np.log(np.array(visits) + 1e-10))
 
 		return actions, action_probs
+
+	def get_action(self, state):
+		self.root = Node(None, 1.0)
+		action_probs = np.zeros(state.height * state.width)
+		actions, probs = self.search(state)
+		action_probs[list(actions)] = probs
+		action = -1
+		if self.exploration:
+			random_p = 0.75 * probs + 0.25 * np.random.dirichlet(
+				0.3 * np.ones(len(probs)))
+			action = np.random.choice(
+				actions, p=random_p)
+		else:
+			action = np.random.choice(actions, p=probs)
+
+		return action, action_probs
 
 	def query_policy_value(self, state):
 		available_actions = state.get_available_actions()
