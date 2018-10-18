@@ -12,9 +12,18 @@ class Node(object):
 		self.U = 0.0
 		self.P = prior_prob
 
-	def select(self):
-		return max(self.children.items(),
-			key=lambda action_node: action_node[1].get_value())
+	def select(self, available_actions):
+		max_value = -1000
+		max_action = -1
+		max_node = None
+		for action, node in self.children.items():
+			if max_value < node.get_value() and \
+				action in available_actions:
+				max_value = node.get_value()
+				max_action = action
+				max_node = node
+
+		return max_action, max_node
 
 	def expand(self, actions_to_probs):
 		for action, prob in actions_to_probs:
@@ -29,8 +38,6 @@ class Node(object):
 		self.N += 1
 		self.W += value
 		self.Q = self.W / self.N
-		if self.parent is not None:
-			self.U = 5 * self.P * np.sqrt(self.parent.N) / (1 + self.N)
 
 	def backpropagation(self, value):
 		if self.parent != None:
@@ -40,7 +47,7 @@ class Node(object):
 
 class MCTS(object):
 
-	def __init__(self, policy_value, simulation_count=200,
+	def __init__(self, policy_value, simulation_count=400,
 			exploration=True):
 		self.root = Node(None, 1.0)
 		self.policy_value = policy_value
@@ -53,7 +60,7 @@ class MCTS(object):
 		while True:
 			if len(node.children) == 0:
 				break
-			action, node = node.select()
+			action, node = node.select(state.available_actions)
 			winner = state.do_action(action)
 
 		action_probs, value = self.query_policy_value(state)
@@ -95,8 +102,16 @@ class MCTS(object):
 				actions, p=random_p)
 		else:
 			action = np.random.choice(actions, p=probs)
+		#self.change_root(action)
 
 		return action, action_probs
+
+	def change_root(self, last_action):
+		if last_action in self.root.children:
+			self.root = self.root.children[last_action]
+			self.root.parent = None
+		else:
+			self.root = Node(None, 1.0)
 
 	def query_policy_value(self, state):
 		available_actions = state.get_available_actions()

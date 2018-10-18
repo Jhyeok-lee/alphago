@@ -11,13 +11,13 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.episode_num = 100
+		self.episode_num = 500
 		self.width = 11
 		self.height = 11
 		self.max_state_size = 4
 		self.batch_size = 512
 		self.learning_rate = 0.001
-		self.simulation_count = 200
+		self.simulation_count = 400
 
 	def train(self, start_step=0):
 		if start_step != 0:
