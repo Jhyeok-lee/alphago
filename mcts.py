@@ -3,23 +3,23 @@ import copy
 
 class Node(object):
 
-	def __init__(self, parent, prior_prob):
+	def __init__(self, parent, prior_prob, c_puct):
 		self.parent = parent
 		self.children = {}
 		self.N = 0
 		self.W = 0.0
 		self.Q = 0.0
-		self.U = 0.0
 		self.P = prior_prob
+		self.c_puct = c_puct
 
 	def select(self, available_actions):
-		max_value = -1000
+		max_value = -5
 		max_action = -1
 		max_node = None
 		for action, node in self.children.items():
-			if max_value < node.get_value() and \
+			if max_value < node.get_u() and \
 				action in available_actions:
-				max_value = node.get_value()
+				max_value = node.get_u()
 				max_action = action
 				max_node = node
 
@@ -28,16 +28,17 @@ class Node(object):
 	def expand(self, actions_to_probs):
 		for action, prob in actions_to_probs:
 			if action not in self.children:
-				self.children[action] = Node(self, prob)
+				self.children[action] = Node(self, prob, self.c_puct)
 
-	def get_value(self):
-		self.U = 5 * self.P * np.sqrt(self.parent.N) / (1 + self.N)
-		return self.Q + self.U
+	def get_u(self):
+		U = self.Q + \
+			self.c_puct * self.P * np.sqrt(max(1, self.N-1)) / (1 + self.N)
+		return U
 
 	def update(self, value):
 		self.N += 1
 		self.W += value
-		self.Q = self.W / self.N
+		self.Q = self.W / (1 + self.N)
 
 	def backpropagation(self, value):
 		if self.parent != None:
@@ -48,11 +49,12 @@ class Node(object):
 class MCTS(object):
 
 	def __init__(self, policy_value, simulation_count=400,
-			exploration=True):
-		self.root = Node(None, 1.0)
+			exploration=True, c_puct=0.96):
+		self.root = Node(None, 1.0, c_puct)
 		self.policy_value = policy_value
 		self.simulation_count = simulation_count
 		self.exploration = exploration
+		self.c_puct = c_puct
 
 	def simulation(self, state):
 		node = self.root
@@ -90,7 +92,7 @@ class MCTS(object):
 		return actions, action_probs
 
 	def get_action(self, state):
-		self.root = Node(None, 1.0)
+		self.root = Node(None, 1.0, self.c_puct)
 		action_probs = np.zeros(state.height * state.width)
 		actions, probs = self.search(state)
 		action_probs[list(actions)] = probs
