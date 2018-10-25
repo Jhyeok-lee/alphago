@@ -32,7 +32,7 @@ class Node(object):
 
 	def get_u(self):
 		U = self.Q + \
-			self.c_puct * self.P * np.sqrt(max(1, self.N-1)) / (1 + self.N)
+			self.c_puct * self.P * np.sqrt(max(1, self.parent.N-1)) / (1 + self.N)
 		return U
 
 	def update(self, value):
