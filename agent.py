@@ -11,13 +11,14 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.episode_num = 500
-		self.width = 11
-		self.height = 11
+		self.episode_num = 3000
+		self.width = 7
+		self.height = 7
 		self.max_state_size = 4
 		self.batch_size = 512
 		self.learning_rate = 0.001
 		self.simulation_count = 400
+		self.c_puct = 0.96
 
 	def train(self, start_step=0):
 		if start_step != 0:
@@ -49,6 +50,7 @@ class Agent(object):
 
 			if winner == 2:
 				continue
+			print(state.get_game_state())
 			print("Winner : ", winner)
 
 			augmented_states, augmented_actions, augmented_values = \
@@ -57,7 +59,7 @@ class Agent(object):
 				augmented_values))[:]
 			data.extend(play_data)
 
-			if (episode+1) % 10 == 0:
+			if (episode+1) % 5 == 0 and len(data) > 512:
 				mini_batch = random.sample(data, self.batch_size)
 				states_batch = [d[0] for d in mini_batch]
 				actions_batch = [d[1] for d in mini_batch]
