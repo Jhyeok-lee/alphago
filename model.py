@@ -14,9 +14,7 @@ class PolicyValueNet:
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None,
-                              self.input_size, width, height])
-        self.input_state = tf.reshape(self.input_state, [-1, width, height,
-                                                            self.input_size])
+                              width, height, self.input_size])
         self.input_action = tf.placeholder(tf.float32, [None, width * height])
         self.input_value = tf.placeholder(tf.float32, [None])
         self.learning_rate = tf.placeholder(tf.float32)
@@ -128,7 +126,9 @@ class PolicyValueNet:
         return train_op
 
     def policy_value(self, state):
-      state = np.array(state).reshape(-1, self.height, self.width, self.input_size)
+      state = np.array([state])
+      state = state.reshape(state.shape[0],
+        self.height, self.width, self.input_size)
       action_probs, value = self.session.run(
           [self.Policy_Network, self.Value_Network], 
           feed_dict = {self.input_state : state})
@@ -136,7 +136,9 @@ class PolicyValueNet:
 
     def train(self, state_batch, action_batch, value_batch, step, 
                 learning_rate):
-      value_batch = np.array(value_batch).reshape(-1, 1)
+      state_batch = np.array(state_batch)
+      state_batch = state_batch.reshape(state_batch.shape[0],
+        self.width, self.height, self.input_size)
       loss, value_mse, policy_entropy, _ = \
         self.session.run([self.loss, self.value_mse, self.policy_entropy, self.train_op],
                          feed_dict={
