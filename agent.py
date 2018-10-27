@@ -26,12 +26,15 @@ class Agent(object):
 		else:
 			model_path = None
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
-				self.learning_rate, model_path=model_path, train_mode=True)
+				model_path=model_path, train_mode=True)
 		state =  State(self.height, self.width, self.max_state_size)
 		game = Game(state)
 		player1 = MCTS(model.policy_value, self.simulation_count)
 		player2 = MCTS(model.policy_value, self.simulation_count)
 		data = deque(maxlen=10000)
+		prev_loss = 10
+		prev_value_mse = 10
+		prev_policy_entropy = 10
 
 		episode = 0
 		if start_step > 0:
@@ -50,28 +53,44 @@ class Agent(object):
 
 			if winner == 2:
 				continue
+			print("")
 			print(state.get_game_state())
-			print("Winner : ", winner)
+			if winner == 1:
+				print("Black Win")
+			else:
+				print("White Win")
 
 			augmented_states, augmented_actions, augmented_values = \
 				self.augmenting_data(game_states, action_probs, values)
 			play_data = list(zip(augmented_states, augmented_actions,
 				augmented_values))[:]
 			data.extend(play_data)
+			loss = 10
+			value_mse = 10
+			policy_entropy = 10
 
-			if (episode+1) % 5 == 0 and len(data) > 512:
+			if (episode+1) % 5 == 0:
 				mini_batch = random.sample(data, self.batch_size)
 				states_batch = [d[0] for d in mini_batch]
 				actions_batch = [d[1] for d in mini_batch]
 				values_batch = [d[2] for d in mini_batch]
-				loss, entropy = \
-					model.train(states_batch, actions_batch, values_batch, episode+1)
+				loss, value_mse, policy_entropy = \
+					model.train(states_batch, actions_batch, values_batch, episode+1,
+						self.learning_rate)
 				print("loss : ", loss)
-				print("entropy : ", entropy)
+				print("value : ", value_mse)
+				print("entropy : ", policy_entropy)
 
 			if (episode+1) % 100 == 0:
 				model_path = "data/model"
 				model.save_model(model_path, episode+1)
+				if prev_loss > loss and \
+					prev_policy_entropy > policy_entropy and \
+					prev_value_mse > value_mse:
+					prev_loss = loss
+					prev_policy_entropy = policy_entropy
+					prev_value_mse = value_mse
+					model.save_model("best/model", None)
 
 			episode += 1
 
