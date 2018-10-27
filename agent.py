@@ -11,14 +11,13 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.episode_num = 3000
+		self.episode_num = 2000
 		self.width = 8
 		self.height = 8
 		self.max_state_size = 3
 		self.batch_size = 512
-		self.learning_rate = 0.01
+		self.learning_rate = 0.001
 		self.simulation_count = 400
-		self.c_puct = 0.96
 
 	def train(self, start_step=0):
 		if start_step != 0:
@@ -26,15 +25,12 @@ class Agent(object):
 		else:
 			model_path = None
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
-				model_path=model_path, train_mode=True)
+				self.learning_rate, model_path=model_path, train_mode=True)
 		state =  State(self.height, self.width, self.max_state_size)
 		game = Game(state)
 		player1 = MCTS(model.policy_value, self.simulation_count)
 		player2 = MCTS(model.policy_value, self.simulation_count)
 		data = deque(maxlen=10000)
-		prev_loss = 10
-		prev_value_mse = 10
-		prev_policy_entropy = 10
 
 		episode = 0
 		if start_step > 0:
@@ -53,50 +49,27 @@ class Agent(object):
 
 			if winner == 2:
 				continue
-			print("")
-			print(state.get_game_state())
-			if winner == 1:
-				print("Black Win")
-			else:
-				print("White Win")
+			print("Winner : ", winner)
 
 			augmented_states, augmented_actions, augmented_values = \
 				self.augmenting_data(game_states, action_probs, values)
 			play_data = list(zip(augmented_states, augmented_actions,
 				augmented_values))[:]
 			data.extend(play_data)
-			loss = 10
-			value_mse = 10
-			policy_entropy = 10
 
 			if (episode+1) % 5 == 0:
 				mini_batch = random.sample(data, self.batch_size)
 				states_batch = [d[0] for d in mini_batch]
 				actions_batch = [d[1] for d in mini_batch]
 				values_batch = [d[2] for d in mini_batch]
-				loss, value_mse, policy_entropy = \
-					model.train(states_batch, actions_batch, values_batch, episode+1,
-						self.learning_rate)
+				loss, entropy = \
+					model.train(states_batch, actions_batch, values_batch, episode+1)
 				print("loss : ", loss)
-				print("value : ", value_mse)
-				print("entropy : ", policy_entropy)
+				print("entropy : ", entropy)
 
 			if (episode+1) % 100 == 0:
 				model_path = "data/model"
 				model.save_model(model_path, episode+1)
-				if prev_loss > loss and \
-					prev_policy_entropy > policy_entropy and \
-					prev_value_mse > value_mse:
-					prev_loss = loss
-					prev_policy_entropy = policy_entropy
-					prev_value_mse = value_mse
-					model.save_model("best/model", None)
-
-			if (episode+1) % 400 == 0:
-				self.learning_rate /= 10.0
-
-			if (episode+1) % 800 == 0:
-				self.learning_rate /= 2.0
 
 			episode += 1
 
