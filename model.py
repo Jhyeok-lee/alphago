@@ -10,7 +10,7 @@ class PolicyValueNet:
         self.n_action = width * height
         self.input_size = max_state_size*2 + 1
         self.train_mode = train_mode
-        self.num_of_res_layer = 3
+        self.num_of_res_layer = 1
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None,
