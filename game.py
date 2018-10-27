@@ -5,7 +5,7 @@ class Game:
 	def __init__(self, state):
 		self.state = state
 
-	def play(self, black_player, white_player):
+	def play(self, black_player, white_player, show=False):
 		self.state.reset()
 		players = [white_player, black_player]
 		game_states = []
@@ -29,9 +29,10 @@ class Game:
 			winner = self.state.do_action(action)
 			if winner != -1:
 				break
+			if show:
+				print("")
+				print(self.state.get_game_state())
 
-		print("Average time of per turn : ", np.mean(time_per_turn))
-		print("Game time : ", time.time() - game_time)
 		values = np.zeros(len(current_players))
 		values[np.array(current_players) == winner] = 1.0
 		values[np.array(current_players) != winner] = -1.0
