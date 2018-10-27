@@ -12,11 +12,11 @@ from mcts import MCTS
 class Agent(object):
 	def __init__(self):
 		self.episode_num = 3000
-		self.width = 7
-		self.height = 7
-		self.max_state_size = 4
+		self.width = 8
+		self.height = 8
+		self.max_state_size = 3
 		self.batch_size = 512
-		self.learning_rate = 0.001
+		self.learning_rate = 0.01
 		self.simulation_count = 400
 		self.c_puct = 0.96
 
@@ -91,6 +91,12 @@ class Agent(object):
 					prev_policy_entropy = policy_entropy
 					prev_value_mse = value_mse
 					model.save_model("best/model", None)
+
+			if (episode+1) % 400 == 0:
+				self.learning_rate /= 10.0
+
+			if (episode+1) % 800 == 0:
+				self.learning_rate /= 2.0
 
 			episode += 1
 
