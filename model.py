@@ -13,10 +13,12 @@ class PolicyValueNet:
         self.num_of_res_layer = 3
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
-        self.input_state = tf.placeholder(tf.float32, [None, 
+        self.input_state = tf.placeholder(tf.float32, [None,
                               self.input_size, width, height])
+        self.input_state = tf.reshape(self.input_state, [-1, width, height,
+                                                            self.input_size])
         self.input_action = tf.placeholder(tf.float32, [None, width * height])
-        self.input_value = tf.placeholder(tf.float32, [None, 1])
+        self.input_value = tf.placeholder(tf.float32, [None])
         self.learning_rate = tf.placeholder(tf.float32)
 
         self.Input_Network = self._build_input_network()
@@ -53,8 +55,7 @@ class PolicyValueNet:
                                  use_bias=use_bias)
 
     def _batch_norm(self, inputs, axis=-1, momentum=0.95, epsilon=1e-5,
-                          center=True, scale=True, fused=True,
-                          training=self.train_mode):
+                          center=True, scale=True, fused=True):
       return tf.layers.batch_normalization(inputs=inputs,
                                             axis=axis,
                                             momentum=momentum,
@@ -62,7 +63,7 @@ class PolicyValueNet:
                                             center=center,
                                             scale=scale,
                                             fused=fused,
-                                            training=training)
+                                            training=self.train_mode)
 
     def _build_input_network(self):
       model = self.input_state
@@ -127,10 +128,11 @@ class PolicyValueNet:
         return train_op
 
     def policy_value(self, state):
-        action_probs, value = self.session.run(
-            [self.Policy_Network, self.Value_Network], 
-            feed_dict = {self.input_state : [state]})
-        return action_probs[0], value
+      state = np.array(state).reshape(-1, self.height, self.width, self.input_size)
+      action_probs, value = self.session.run(
+          [self.Policy_Network, self.Value_Network], 
+          feed_dict = {self.input_state : state})
+      return action_probs[0], value
 
     def train(self, state_batch, action_batch, value_batch, step, 
                 learning_rate):
