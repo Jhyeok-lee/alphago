@@ -34,6 +34,24 @@ class State(object):
 	def get_available_actions(self):
 		return self.available_actions
 
+	def get_smart_available_actions(self):
+		if len(self.gibo) == 0:
+			r = int(self.height / 2)
+			c = int(self.width / 2)
+			return [r * self.width + c]
+
+		ret = []
+		for a in self.gibo:
+			a_r = a // self.width
+			a_c = a % self.width
+			for b in self.available_actions:
+				b_r = b // self.width
+				b_c = b % self.width
+				if abs(a_r - b_r) + abs(a_c - b_c) <= 3:
+					ret.append(b)
+
+		return ret
+
 	def get_current_player(self):
 		return self.player
 
