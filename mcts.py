@@ -86,8 +86,7 @@ class MCTS(object):
 		actions_to_visits = [(action, node.N)
 					for action, node in self.root.children.items()]
 		actions, visits = zip(*actions_to_visits)
-		action_probs = self.softmax(1.0/temp *
-			np.log(np.array(visits) + 1e-10))
+		action_probs = visits / np.sum(visits)
 
 		return actions, action_probs
 
