@@ -32,6 +32,7 @@ class Game:
 			if show:
 				print("")
 				print(self.state.get_game_state())
+				print("Turn per secs : ", np.mean(time_per_turn))
 
 		values = np.zeros(len(current_players))
 		values[np.array(current_players) == winner] = 1.0
