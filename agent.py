@@ -95,9 +95,6 @@ class Agent(object):
 			if (episode+1) % 400 == 0:
 				self.learning_rate /= 10.0
 
-			if (episode+1) % 800 == 0:
-				self.learning_rate /= 2.0
-
 			episode += 1
 
 	def augmenting_data(self, states, action_probs, values):
