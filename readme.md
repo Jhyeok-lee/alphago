@@ -1,7 +1,8 @@
-## Structure
-1. game
-2. model
-3. agent
-4. random_player
+# 알파고 제로 + 오목
 
-## TODO
+## 일지
+[memo](https://github.com/Jhyeok-lee/alphago/blob/develop/memo.md)
+
+## 구조
+
+## Reference
