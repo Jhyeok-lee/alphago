@@ -11,15 +11,15 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.width = 8
-		self.height = 8
+		self.width = 6
+		self.height = 6
 		self.max_state_size = 3
 		self.win_contition = 4
 		self.batch_size = 512
 		self.max_game_count = 300000
-		self.max_training_loop_count = 20
 		self.max_data_size = 10000
-		self.learning_rate = 0.01
+		self.max_training_loop_count = 5
+		self.learning_rate = 0.001
 		self.simulation_count = 400
 		self.c_puct = 0.96
 
@@ -34,6 +34,7 @@ class Agent(object):
 
 		game_count = 0
 		training_step = 0
+		new_data_count = 0
 		while game_count < self.max_game_count:
 			winner, game_states, action_probs, values = \
 				game.play(player, player)
@@ -49,15 +50,17 @@ class Agent(object):
 				print("White Win")
 			"""
 
+
 			augmented_states, augmented_actions, augmented_values = \
 				self.augmenting_data(game_states, action_probs, values)
 			play_data = list(zip(augmented_states, augmented_actions,
 				augmented_values))[:]
 			data_queue.extend(play_data)
 			loss = 10
+			new_data_count += len(augmented_states)
 
-			if len(data) == self.max_data_size:
-				loss, value_mse, policy_entropy = 0, 0, 0
+			if len(data_queue) == 10000 and new_data_count > 2500:
+				loss, value_mse, policy_entropy = 0.0, 0.0, 0.0
 				for i in range(self.max_training_loop_count):
 					mini_batch = random.sample(data_queue, self.batch_size)
 					states_batch = [d[0] for d in mini_batch]
@@ -67,18 +70,21 @@ class Agent(object):
 						model.train(states_batch, actions_batch, values_batch,
 							training_step, self.learning_rate)
 					training_step += 1
-				print("loss : ", loss)
-				print("value : ", value_mse)
-				print("entropy : ", policy_entropy)
-				model.save_model("data/model", training_step+1)
+				new_data_count = 0
+				#data_queue.clear()
 				if prev_loss > loss:
+					prev_loss = loss
+					print("game_count %d, training_step %d" %(game_count, training_step))
+					print("loss %.5f, value %.5f, entropy %.5f" %(loss,value_mse,policy_entropy))
 					model.save_model("data/best_model", None)
 
-			if (training_step+1) == 400:
-				self.learning_rate /= 10.0
+			"""
+			if (training_step+1) == 100:
+				self.learning_rate *= 0.1
 
-			if (training_step+1) == 2000:
-				self.learning_rate /= 10.0
+			if (training_step+1) == 300:
+				self.learning_rate *= 0.1
+			"""
 
 			game_count += 1
 
