@@ -11,91 +11,76 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.episode_num = 3000
 		self.width = 8
 		self.height = 8
 		self.max_state_size = 3
+		self.win_contition = 4
 		self.batch_size = 512
+		self.max_game_count = 300000
+		self.max_training_loop_count = 20
+		self.max_data_size = 10000
 		self.learning_rate = 0.01
 		self.simulation_count = 400
 		self.c_puct = 0.96
 
 	def train(self, start_step=0):
-		if start_step != 0:
-			model_path = 'data/model-' + str(start_step-1)
-		else:
-			model_path = None
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
-				model_path=model_path, train_mode=True)
-		state =  State(self.height, self.width, self.max_state_size)
+				model_path=None, train_mode=True)
+		state =  State(self.height, self.width, self.max_state_size, self.win_contition)
 		game = Game(state)
-		player1 = MCTS(model.policy_value, self.simulation_count)
-		player2 = MCTS(model.policy_value, self.simulation_count)
-		data = deque(maxlen=10000)
+		player = MCTS(model.policy_value, self.simulation_count)
+		data_queue = deque(maxlen=self.max_data_size)
 		prev_loss = 10
-		prev_value_mse = 10
-		prev_policy_entropy = 10
 
-		episode = 0
-		if start_step > 0:
-			episode = start_step - 1
-		while episode < self.episode_num + start_step:
-			black, white = None, None
-			if episode % 2 == 0:
-				black = player1
-				white = player2
-			else:
-				black = player2
-				white = player1
-
+		game_count = 0
+		training_step = 0
+		while game_count < self.max_game_count:
 			winner, game_states, action_probs, values = \
-				game.play(black, white)
+				game.play(player, player)
 
 			if winner == 2:
 				continue
+			"""
 			print("")
 			print(state.get_game_state())
 			if winner == 1:
 				print("Black Win")
 			else:
 				print("White Win")
+			"""
 
 			augmented_states, augmented_actions, augmented_values = \
 				self.augmenting_data(game_states, action_probs, values)
 			play_data = list(zip(augmented_states, augmented_actions,
 				augmented_values))[:]
-			data.extend(play_data)
+			data_queue.extend(play_data)
 			loss = 10
-			value_mse = 10
-			policy_entropy = 10
 
-			if (episode+1) % 5 == 0:
-				mini_batch = random.sample(data, self.batch_size)
-				states_batch = [d[0] for d in mini_batch]
-				actions_batch = [d[1] for d in mini_batch]
-				values_batch = [d[2] for d in mini_batch]
-				loss, value_mse, policy_entropy = \
-					model.train(states_batch, actions_batch, values_batch, episode+1,
-						self.learning_rate)
+			if len(data) == self.max_data_size:
+				loss, value_mse, policy_entropy = 0, 0, 0
+				for i in range(self.max_training_loop_count):
+					mini_batch = random.sample(data_queue, self.batch_size)
+					states_batch = [d[0] for d in mini_batch]
+					actions_batch = [d[1] for d in mini_batch]
+					values_batch = [d[2] for d in mini_batch]
+					loss, value_mse, policy_entropy = \
+						model.train(states_batch, actions_batch, values_batch,
+							training_step, self.learning_rate)
+					training_step += 1
 				print("loss : ", loss)
 				print("value : ", value_mse)
 				print("entropy : ", policy_entropy)
+				model.save_model("data/model", training_step+1)
+				if prev_loss > loss:
+					model.save_model("data/best_model", None)
 
-			if (episode+1) % 100 == 0:
-				model_path = "data/model"
-				model.save_model(model_path, episode+1)
-				if prev_loss > loss and \
-					prev_policy_entropy > policy_entropy and \
-					prev_value_mse > value_mse:
-					prev_loss = loss
-					prev_policy_entropy = policy_entropy
-					prev_value_mse = value_mse
-					model.save_model("best/model", None)
-
-			if (episode+1) % 400 == 0:
+			if (training_step+1) == 400:
 				self.learning_rate /= 10.0
 
-			episode += 1
+			if (training_step+1) == 2000:
+				self.learning_rate /= 10.0
+
+			game_count += 1
 
 	def augmenting_data(self, states, action_probs, values):
 		augmented_states = []
