@@ -2,7 +2,7 @@ import numpy as np
 
 class State(object):
 
-	def __init__(self, height, width, max_state_size):
+	def __init__(self, height, width, max_state_size, win_condition):
 		self.width = width
 		self.height = height
 		self.max_state_size = max_state_size
@@ -10,6 +10,7 @@ class State(object):
 		self.white_states = []
 		self.counts = height * width
 		self.gibo = []
+		self.win_condition = win_condition
 		self.reset()
 
 	def reset(self):
@@ -114,9 +115,9 @@ class State(object):
 			hi_r += 1
 		hi_r -= 1
 		counts = hi_r - lo_r + 1
-		if counts == 5:
+		if counts == self.win_condition:
 			return 1
-		elif counts > 5:
+		elif counts > self.win_condition:
 			return 2
 
 		lo_c = c
@@ -128,9 +129,9 @@ class State(object):
 			hi_c += 1
 		hi_c -= 1
 		counts = hi_c - lo_c + 1
-		if counts == 5:
+		if counts == self.win_condition:
 			return 1
-		elif counts > 5:
+		elif counts > self.win_condition:
 			return 2
 
 		lo_r = r
@@ -149,9 +150,9 @@ class State(object):
 		hi_r -= 1
 		hi_c -= 1
 		counts = hi_r - lo_r + 1
-		if counts == 5:
+		if counts == self.win_condition:
 			return 1
-		elif counts > 5:
+		elif counts > self.win_condition:
 			return 2
 
 		lo_r = r
@@ -170,9 +171,9 @@ class State(object):
 		hi_r -= 1
 		hi_c += 1
 		counts = hi_r - lo_r + 1
-		if counts == 5:
+		if counts == self.win_condition:
 			return 1
-		elif counts > 5:
+		elif counts > self.win_condition:
 			return 2
 
 		return 0
