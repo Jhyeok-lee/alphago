@@ -12,6 +12,7 @@
 - 1개부터 늘려봄
 - Overfit이 일어나도록 해서 Value MSE와 Policy Entropy가 어디까지 떨어지는지 확인
 - 5개 일 때, MSE가 제일 낮음
+- learning rate 점점 감소하게 함 0.01 -> 0.001 -> 0.0001
 - Batch Size가 되는데로 training loop 5로 잡아서 돌려봄
 - 설마해서 게임 확인하니 의외로 방어도 하고 공격도 함
 - 근데 인간한테 안됨
