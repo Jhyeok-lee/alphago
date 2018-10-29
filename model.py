@@ -10,7 +10,7 @@ class PolicyValueNet:
         self.n_action = width * height
         self.input_size = max_state_size*2 + 1
         self.train_mode = train_mode
-        self.num_of_res_layer = 1
+        self.num_of_res_layer = 5
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None, self.input_size,
@@ -43,7 +43,7 @@ class PolicyValueNet:
         if model_path is not None:
           self.restore_model(model_path)
 
-    def _conv2(self, inputs, filters=32, kernel_size=3,
+    def _conv2(self, inputs, filters=64, kernel_size=3,
                              padding="same", data_format="channels_last",
                              use_bias=False):
       return tf.layers.conv2d(inputs=inputs,
@@ -74,12 +74,13 @@ class PolicyValueNet:
     def _build_common_network(self):
       model = self.Input_Network
       for i in range(self.num_of_res_layer):
+        first_input = model
         model = self._conv2(model)
         model = self._batch_norm(model)
         model = tf.nn.relu(model)
         model = self._conv2(model)
         model = self._batch_norm(model)
-        model = tf.nn.relu(model + self.Input_Network)
+        model = tf.nn.relu(model + first_input)
       return model
 
     def _build_policy_network(self):
@@ -103,9 +104,7 @@ class PolicyValueNet:
         model = tf.nn.tanh(model)
         return model
 
-
     def _build_policy_entropy(self):
-      
       ce = tf.nn.softmax_cross_entropy_with_logits_v2(
               logits=self.logits, labels=tf.stop_gradient(self.input_action))
       return tf.reduce_mean(ce)
@@ -121,7 +120,7 @@ class PolicyValueNet:
             [tf.nn.l2_loss(v) for v in vars if 'bias' not in v.name.lower()])
         
         self.loss = self.value_mse + self.policy_entropy + l2_penalty
-        optimizer = tf.train.MomentumOptimizer(self.learning_rate, 0.9)
+        optimizer = tf.train.AdamOptimizer(self.learning_rate)
         train_op = optimizer.minimize(self.loss)
 
         return train_op
