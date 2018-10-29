@@ -88,21 +88,23 @@ class MCTS(object):
 		actions, visits = zip(*actions_to_visits)
 		action_probs = visits / np.sum(visits)
 
-		return actions, action_probs
+		best_idx = np.argmax(visits)
+		best_action = actions[best_idx]
+
+		return actions, action_probs, best_action
 
 	def get_action(self, state):
 		self.root = Node(None, 1.0, self.c_puct)
 		action_probs = np.zeros(state.height * state.width)
-		actions, probs = self.search(state)
+		actions, probs, best_action = self.search(state)
 		action_probs[list(actions)] = probs
 		action = -1
 		if self.exploration:
 			random_p = 0.75 * probs + 0.25 * np.random.dirichlet(
 				0.3 * np.ones(len(probs)))
-			action = np.random.choice(
-				actions, p=random_p)
+			action = np.random.choice(actions, p=random_p)
 		else:
-			action = np.random.choice(actions, p=probs)
+			action = best_action
 		#self.change_root(action)
 
 		return action, action_probs
