@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import random
 import time
+import pickle
 from collections import deque
 from game import Game
 from model import PolicyValueNet
@@ -87,6 +88,33 @@ class Agent(object):
 			"""
 
 			game_count += 1
+
+	def make_init_data_queue(self):
+		model = PolicyValueNet(self.height, self.width, self.max_state_size,
+				model_path=None, train_mode=False)
+		state =  State(self.height, self.width, self.max_state_size, self.win_contition)
+		game = Game(state)
+		player = MCTS(model.policy_value, self.simulation_count)
+		data_queue = deque(maxlen=self.max_data_size)
+		while len(data_queue) < self.max_data_size:
+			winner, game_states, action_probs, values = \
+				game.play(player, player)
+
+			if winner == 2:
+				continue
+
+			augmented_states, augmented_actions, augmented_values = \
+				self.augmenting_data(game_states, action_probs, values)
+			play_data = list(zip(augmented_states, augmented_actions,
+				augmented_values))[:]
+			data_queue.extend(play_data)
+
+		with open('data/init_data_queue.pickle', 'wb') as f:
+    		pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+
+    def load_init_data_queue(self, target):
+    	with open('data/init_data_queue.pickle', 'rb') as f:
+    		target = pickle.load(f)
 
 	def augmenting_data(self, states, action_probs, values):
 		augmented_states = []
