@@ -45,3 +45,75 @@ loss 2.77955, value 0.11594, entropy 2.58877
 - 새로운 게임 데이터가 25% 만들어지면 학습 -> 대략 40게임 돌리면 2500개 나옴
 - 알파고 제로의 경우 : 500,000 게임 마다 2048 batch size 1000 loop
 	- 게임 데이터 다 갈아치우고 한 게임당 200개 나오면 4% 학습함
+```
+game_count 135, training_step 5
+loss 4.66822, value 0.98730, entropy 3.60800
+game_count 172, training_step 10
+loss 4.61086, value 0.96736, entropy 3.57046
+game_count 210, training_step 15
+loss 4.61010, value 0.99647, entropy 3.54050
+game_count 247, training_step 20
+loss 4.54531, value 0.95911, entropy 3.51300
+game_count 285, training_step 25
+loss 4.48798, value 0.95131, entropy 3.46343
+game_count 324, training_step 30
+loss 4.29920, value 0.85364, entropy 3.37230
+game_count 364, training_step 35
+loss 4.09460, value 0.70327, entropy 3.31805
+game_count 404, training_step 40
+loss 3.97343, value 0.64113, entropy 3.25900
+game_count 447, training_step 45
+loss 3.91378, value 0.72358, entropy 3.11687
+game_count 534, training_step 55
+loss 3.85677, value 0.80301, entropy 2.98036
+game_count 696, training_step 75
+loss 3.85158, value 0.83880, entropy 2.93920
+game_count 738, training_step 80
+loss 3.77227, value 0.80660, entropy 2.89205
+game_count 777, training_step 85
+loss 3.74161, value 0.80983, entropy 2.85811
+game_count 819, training_step 90
+loss 3.73825, value 0.81922, entropy 2.84532
+game_count 863, training_step 95
+loss 3.71636, value 0.81110, entropy 2.83151
+game_count 906, training_step 100
+loss 3.66868, value 0.80030, entropy 2.79459
+game_count 994, training_step 110
+loss 3.62700, value 0.90001, entropy 2.65311
+game_count 1035, training_step 115
+loss 3.55078, value 0.80585, entropy 2.67100
+game_count 1072, training_step 120
+loss 3.53114, value 0.79295, entropy 2.66422
+game_count 1150, training_step 130
+loss 3.46996, value 0.73280, entropy 2.66310
+game_count 1792, training_step 210
+loss 3.45234, value 0.78075, entropy 2.59680
+game_count 1836, training_step 215
+loss 3.35293, value 0.75857, entropy 2.51951
+game_count 1919, training_step 225
+loss 3.34285, value 0.82701, entropy 2.44089
+game_count 2003, training_step 235
+loss 3.27935, value 0.72771, entropy 2.47658
+game_count 2048, training_step 240
+loss 3.23658, value 0.75521, entropy 2.40624
+game_count 2093, training_step 245
+loss 3.21838, value 0.72481, entropy 2.41839
+game_count 2130, training_step 250
+loss 3.18399, value 0.77112, entropy 2.33764
+game_count 2174, training_step 255
+loss 3.11733, value 0.71651, entropy 2.32554
+game_count 2303, training_step 270
+loss 3.11182, value 0.69857, entropy 2.33779
+game_count 2342, training_step 275
+loss 3.09625, value 0.65679, entropy 2.36396
+game_count 2669, training_step 315
+loss 3.07570, value 0.65557, entropy 2.34423
+```
+![66_1_loss](https://github.com/Jhyeok-lee/alphago/blob/develop/img/66_1_loss.png)
+![66_1_entropy](https://github.com/Jhyeok-lee/alphago/blob/develop/img/66_1_entropy.png)
+![66_1_mse](https://github.com/Jhyeok-lee/alphago/blob/develop/img/66_1_mse.png)
+- 총 걸린시간 : 16시간 23분
+- 총 Training Step : 375
+- 총 Game Count : 3150 게임
+- Entropy는 지속적으로 떨어지지만 MSE는 너무 요동친다
+- MSE를 weight를 주어서 다시
