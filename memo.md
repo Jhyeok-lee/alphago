@@ -117,3 +117,84 @@ loss 3.07570, value 0.65557, entropy 2.34423
 - 총 Game Count : 3150 게임
 - Entropy는 지속적으로 떨어지지만 MSE는 너무 요동친다
 - MSE를 weight를 주어서 다시
+
+## 혹시나 싶어서 해봤더니....
+- residual_layer = 1
+- width = 6
+- height = 6
+- max_state_size = 3
+- win_contition = 4
+- batch_size = 128
+- max_game_count = 300000
+- max_data_size = 1280
+- max_training_loop_count = 1
+- learning_rate = 0.001
+- simulation_count = 400
+- c_puct = 0.96
+- data queue 사이즈, batch 사이즈 줄임
+- loop도 한번씩 -> 꽤 괜찮은 모델 나옴
+- 걸린시간 : 3시간
+- 총 Training Setp : 246
+- Game Count : 620게임
+
+![66_2_loss](https://github.com/Jhyeok-lee/alphago/blob/develop/img/66_2_loss.png)
+![66_2_entropy](https://github.com/Jhyeok-lee/alphago/blob/develop/img/66_2_entropy.png)
+![66_2_mse](https://github.com/Jhyeok-lee/alphago/blob/develop/img/66_2_mse.png)
+```
+game_count 18, training_step 1
+loss 5.29170, value 1.25461, entropy 4.01535
+game_count 20, training_step 2
+loss 4.91588, value 1.06485, entropy 3.82929
+game_count 22, training_step 3
+loss 4.82607, value 0.94318, entropy 3.86114
+game_count 24, training_step 4
+loss 4.80979, value 1.00080, entropy 3.78724
+game_count 28, training_step 6
+loss 4.69615, value 1.02100, entropy 3.65340
+game_count 30, training_step 7
+loss 4.64573, value 0.94957, entropy 3.67441
+game_count 40, training_step 12
+loss 4.63818, value 0.97761, entropy 3.63879
+game_count 60, training_step 21
+loss 4.56001, value 0.98285, entropy 3.55534
+game_count 64, training_step 23
+loss 4.53869, value 0.99215, entropy 3.52472
+game_count 84, training_step 32
+loss 4.51727, value 1.00328, entropy 3.49214
+game_count 86, training_step 33
+loss 4.44219, value 0.95407, entropy 3.46626
+game_count 102, training_step 39
+loss 4.43562, value 0.98405, entropy 3.42969
+game_count 110, training_step 42
+loss 4.34380, value 0.90906, entropy 3.41286
+game_count 113, training_step 43
+loss 4.33314, value 0.89521, entropy 3.41605
+game_count 115, training_step 44
+loss 4.31875, value 0.89770, entropy 3.39917
+game_count 117, training_step 45
+loss 4.22920, value 0.78872, entropy 3.41859
+game_count 120, training_step 46
+loss 4.18167, value 0.78941, entropy 3.37036
+game_count 123, training_step 47
+loss 4.14080, value 0.76289, entropy 3.35601
+game_count 126, training_step 48
+loss 4.00387, value 0.69417, entropy 3.28781
+game_count 131, training_step 50
+loss 3.97380, value 0.63557, entropy 3.31633
+game_count 161, training_step 62
+loss 3.95317, value 0.83337, entropy 3.09785
+game_count 334, training_step 131
+loss 3.88946, value 0.76969, entropy 3.09763
+game_count 336, training_step 132
+loss 3.87968, value 0.81872, entropy 3.03881
+game_count 343, training_step 135
+loss 3.87664, value 0.87083, entropy 2.98366
+game_count 440, training_step 173
+loss 3.81153, value 0.70117, entropy 3.08818
+game_count 549, training_step 213
+loss 3.67016, value 0.71327, entropy 2.93468
+game_count 616, training_step 238
+loss 3.66435, value 0.66526, entropy 2.97682
+game_count 623, training_step 241
+loss 3.61568, value 0.64963, entropy 2.94379
+```
