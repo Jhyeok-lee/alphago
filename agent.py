@@ -12,13 +12,13 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.width = 6
-		self.height = 6
+		self.width = 8
+		self.height = 8
 		self.max_state_size = 3
-		self.win_contition = 4
-		self.batch_size = 512
+		self.win_contition = 5
+		self.batch_size = 128
 		self.max_game_count = 300000
-		self.max_data_size = 10000
+		self.max_data_size = 1280
 		self.max_training_loop_count = 5
 		self.learning_rate = 0.001
 		self.simulation_count = 400
@@ -63,7 +63,8 @@ class Agent(object):
 			loss = 10
 			new_data_count += len(augmented_states)
 
-			if len(data_queue) == self.max_data_size and new_data_count > 128:
+			if len(data_queue) == self.max_data_size and \
+					new_data_count >= self.batch_size:
 				loss, value_mse, policy_entropy = 0.0, 0.0, 0.0
 				mini_batch = random.sample(data_queue, self.batch_size)
 				states_batch = [d[0] for d in mini_batch]
@@ -75,6 +76,8 @@ class Agent(object):
 							training_step, self.learning_rate)
 					training_step += 1
 				new_data_count = 0
+				if training_step % 100 == 0:
+					model.save_model("data/model", training_step)
 				#data_queue.clear()
 				if prev_loss > loss:
 					prev_loss = loss
