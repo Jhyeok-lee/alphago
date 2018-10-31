@@ -2,15 +2,17 @@ import tensorflow as tf
 import numpy as np
 
 class PolicyValueNet:
-    def __init__(self, width, height, max_state_size,
-                 model_path=None, train_mode=True):
+    def __init__(self, width, height, max_state_size, value_weight=1.0,
+                 policy_weight=1.0, model_path=None, train_mode=True):
         self.session = tf.Session()
         self.height = height
         self.width = width
         self.n_action = width * height
         self.input_size = max_state_size*2 + 1
         self.train_mode = train_mode
-        self.num_of_res_layer = 5
+        self.num_of_res_layer = 1
+        self.value_head_weight = 1.0
+        self.policy_entropy_weight = 1.0
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None, self.input_size,
@@ -106,12 +108,15 @@ class PolicyValueNet:
 
     def _build_policy_entropy(self):
       ce = tf.nn.softmax_cross_entropy_with_logits_v2(
-              logits=self.logits, labels=tf.stop_gradient(self.input_action))
+              logits=self.logits, labels=tf.stop_gradient(self.input_action),
+              weights=self.policy_entropy_weight)
       return tf.reduce_mean(ce)
 
     def _build_value_mse(self):
       return tf.losses.mean_squared_error(self.input_value,
-                                          self.Value_Network)
+                                     self.Value_Network,
+                                     weights=self.value_head_weight)
+
 
     def _build_train_op(self):
         l2_penalty_beta = 1e-4
