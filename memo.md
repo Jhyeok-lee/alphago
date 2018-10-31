@@ -216,9 +216,9 @@ loss 3.61568, value 0.64963, entropy 2.94379
 - 총 Training Setp : 685
 - Game Count : 1300게임
 - MSE가 너무 왔다갔다함, Entropy도 잘 학습이 안되는거 같다
-![88_1_loss](https://github.com/Jhyeok-lee/alphago/blob/develop/img/88_2_loss.png)
-![88_1_entropy](https://github.com/Jhyeok-lee/alphago/blob/develop/img/88_2_entropy.png)
-![88_1_mse](https://github.com/Jhyeok-lee/alphago/blob/develop/img/88_2_mse.png)
+![88_1_loss](https://github.com/Jhyeok-lee/alphago/blob/develop/img/88_1_loss.png)
+![88_1_entropy](https://github.com/Jhyeok-lee/alphago/blob/develop/img/88_1_entropy.png)
+![88_1_mse](https://github.com/Jhyeok-lee/alphago/blob/develop/img/88_1_mse.png)
 ```
 game_count 7, training_step 1
 loss 5.70008, value 1.31458, entropy 4.34813
