@@ -22,7 +22,7 @@ class Agent(object):
 		self.max_training_loop_count = 5
 		self.learning_rate = 0.001
 		self.simulation_count = 400
-		self.value_head_weight = 1.0
+		self.value_head_weight = 0.01
 		self.policy_entropy_weight = 1.0
 		self.c_puct = 0.96
 
@@ -35,6 +35,7 @@ class Agent(object):
 		player = MCTS(model.policy_value, self.simulation_count)
 		data_queue = deque(maxlen=self.max_data_size)
 		prev_loss = 10
+		prev_entropy = 10
 
 		game_count = 0
 		training_step = 0
@@ -79,8 +80,8 @@ class Agent(object):
 				if training_step % 100 == 0:
 					model.save_model("data/model", training_step)
 				#data_queue.clear()
-				if prev_loss > loss:
-					prev_loss = loss
+				if prev_entropy-0.0999 > entropy:
+					prev_entropy = entropy
 					print("game_count %d, training_step %d" %(game_count, training_step))
 					print("loss %.5f, value %.5f, entropy %.5f" %(loss,value_mse,policy_entropy))
 					model.save_model("data/best_model", None)
