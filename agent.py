@@ -16,19 +16,16 @@ class Agent(object):
 		self.height = 6
 		self.max_state_size = 3
 		self.win_contition = 4
-		self.batch_size = 512
+		self.batch_size = 128
 		self.max_game_count = 300000
-		self.max_data_size = 10000
-		self.max_training_loop_count = 5
+		self.max_data_size = 1280
+		self.max_training_loop_count = 1
 		self.learning_rate = 0.001
 		self.simulation_count = 400
-		self.value_head_weight = 1.0
-		self.policy_entropy_weight = 1.0
 		self.c_puct = 0.96
 
 	def train(self, start_step=0):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
-				self.value_head_weight, self.policy_entropy_weight,
 				model_path=None, train_mode=True)
 		state =  State(self.height, self.width, self.max_state_size, self.win_contition)
 		game = Game(state)

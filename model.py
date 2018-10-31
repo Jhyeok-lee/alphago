@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 
 class PolicyValueNet:
-    def __init__(self, width, height, max_state_size, value_weight=1.0,
-                 policy_weight=1.0, model_path=None, train_mode=True):
+    def __init__(self, width, height, max_state_size, 
+                model_path=None, train_mode=True):
         self.session = tf.Session()
         self.height = height
         self.width = width
@@ -11,8 +11,6 @@ class PolicyValueNet:
         self.input_size = max_state_size*2 + 1
         self.train_mode = train_mode
         self.num_of_res_layer = 1
-        self.value_head_weight = 1.0
-        self.policy_entropy_weight = 1.0
 
         self.initializer = tf.contrib.layers.variance_scaling_initializer()
         self.input_state = tf.placeholder(tf.float32, [None, self.input_size,
@@ -108,15 +106,12 @@ class PolicyValueNet:
 
     def _build_policy_entropy(self):
       ce = tf.nn.softmax_cross_entropy_with_logits_v2(
-              logits=self.logits, labels=tf.stop_gradient(self.input_action)) * \
-        self.policy_entropy_weight
+              logits=self.logits, labels=tf.stop_gradient(self.input_action))
       return tf.reduce_mean(ce)
 
     def _build_value_mse(self):
       return tf.losses.mean_squared_error(self.input_value,
-                                     self.Value_Network,
-                                     weights=self.value_head_weight)
-
+                                     self.Value_Network)
 
     def _build_train_op(self):
         l2_penalty_beta = 1e-4
@@ -134,7 +129,7 @@ class PolicyValueNet:
       action_probs, value = self.session.run(
           [self.Policy_Network, self.Value_Network], 
           feed_dict = {self.input_state : [state]})
-      return action_probs[0], value
+      return action_probs[0], value[0]
 
     def train(self, state_batch, action_batch, value_batch, step, 
                 learning_rate):
