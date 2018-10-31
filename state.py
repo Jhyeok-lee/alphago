@@ -69,14 +69,15 @@ class State(object):
 	def get_current_state(self):
 		ret = []
 		if self.player == 1:
+			for i in range(0, self.max_state_size):
+				ret.append(self.black_states[i])
+				ret.append(self.white_states[i])
 			ret.append(np.ones((self.height, self.width)))
 		else:
+			for i in range(0, self.max_state_size):
+				ret.append(self.white_states[i])
+				ret.append(self.black_states[i])
 			ret.append(np.zeros((self.height, self.width)))
-
-		ret.extend(self.white_states[(len(self.white_states) -
-			self.max_state_size):])
-		ret.extend(self.black_states[(len(self.black_states) -
-			self.max_state_size):])
 
 		return ret
 
