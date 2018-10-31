@@ -12,14 +12,14 @@ from mcts import MCTS
 
 class Agent(object):
 	def __init__(self):
-		self.width = 8
-		self.height = 8
+		self.width = 6
+		self.height = 6
 		self.max_state_size = 3
-		self.win_contition = 5
+		self.win_contition = 4
 		self.batch_size = 128
 		self.max_game_count = 300000
 		self.max_data_size = 1280
-		self.max_training_loop_count = 5
+		self.max_training_loop_count = 2
 		self.learning_rate = 0.001
 		self.simulation_count = 400
 		self.value_head_weight = 0.01
@@ -80,8 +80,8 @@ class Agent(object):
 				if training_step % 100 == 0:
 					model.save_model("data/model", training_step)
 				#data_queue.clear()
-				if prev_entropy-0.0999 > entropy:
-					prev_entropy = entropy
+				if prev_entropy-0.0999 > policy_entropy:
+					prev_entropy = policy_entropy
 					print("game_count %d, training_step %d" %(game_count, training_step))
 					print("loss %.5f, value %.5f, entropy %.5f" %(loss,value_mse,policy_entropy))
 					model.save_model("data/best_model", None)
@@ -117,11 +117,11 @@ class Agent(object):
 			data_queue.extend(play_data)
 
 		with open('data/init_data_queue.pickle', 'wb') as f:
-    		pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+			pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
 
-    def load_init_data_queue(self, target):
-    	with open('data/init_data_queue.pickle', 'rb') as f:
-    		target = pickle.load(f)
+	def load_init_data_queue(self, target):
+		with open('data/init_data_queue.pickle', 'rb') as f:
+			target = pickle.load(f)
 
 	def augmenting_data(self, states, action_probs, values):
 		augmented_states = []
