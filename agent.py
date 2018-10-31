@@ -63,13 +63,13 @@ class Agent(object):
 			loss = 10
 			new_data_count += len(augmented_states)
 
-			if len(data_queue) == 10000 and new_data_count > 2500:
+			if len(data_queue) == self.max_data_size and new_data_count > 128:
 				loss, value_mse, policy_entropy = 0.0, 0.0, 0.0
+				mini_batch = random.sample(data_queue, self.batch_size)
+				states_batch = [d[0] for d in mini_batch]
+				actions_batch = [d[1] for d in mini_batch]
+				values_batch = [d[2] for d in mini_batch]
 				for i in range(self.max_training_loop_count):
-					mini_batch = random.sample(data_queue, self.batch_size)
-					states_batch = [d[0] for d in mini_batch]
-					actions_batch = [d[1] for d in mini_batch]
-					values_batch = [d[2] for d in mini_batch]
 					loss, value_mse, policy_entropy = \
 						model.train(states_batch, actions_batch, values_batch,
 							training_step, self.learning_rate)
