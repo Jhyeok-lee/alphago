@@ -30,7 +30,17 @@ class State(object):
 		p = np.zeros((self.height, self.width))
 		p[self.black_states[len(self.black_states)-1] == 1] = 1
 		p[self.white_states[len(self.white_states)-1] == 1] = 2
-		return p
+		ret = ""
+		for r in range(self.height):
+			for c in range(self.width):
+				if p[r][c] == 1:
+					ret += "O"
+				elif p[r][c] == 2:
+					ret += "X"
+				else:
+					ret += " "
+			ret += "\n"
+		return ret
 
 	def get_available_actions(self):
 		return self.available_actions

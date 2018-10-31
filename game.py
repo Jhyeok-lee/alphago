@@ -27,12 +27,12 @@ class Game:
 			current_players.append(player)
 
 			winner = self.state.do_action(action)
-			if winner != -1:
-				break
 			if show:
 				print("")
 				print(self.state.get_game_state())
 				print("Turn per secs : ", np.mean(time_per_turn))
+			if winner != -1:
+				break
 
 		values = np.zeros(len(current_players))
 		values[np.array(current_players) == winner] = 1.0
