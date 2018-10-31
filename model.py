@@ -108,8 +108,8 @@ class PolicyValueNet:
 
     def _build_policy_entropy(self):
       ce = tf.nn.softmax_cross_entropy_with_logits_v2(
-              logits=self.logits, labels=tf.stop_gradient(self.input_action),
-              weights=self.policy_entropy_weight)
+              logits=self.logits, labels=tf.stop_gradient(self.input_action)) * \
+        self.policy_entropy_weight
       return tf.reduce_mean(ce)
 
     def _build_value_mse(self):
