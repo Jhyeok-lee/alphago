@@ -53,7 +53,8 @@ class PolicyValueNet:
                                  kernel_size=kernel_size,
                                  padding=padding,
                                  data_format=data_format,
-                                 use_bias=use_bias)
+                                 use_bias=use_bias,
+                                 kernel_initializer=self.initializer)
 
     def _batch_norm(self, inputs, axis=-1, momentum=0.95, epsilon=1e-5,
                           center=True, scale=True, fused=True):
@@ -68,8 +69,8 @@ class PolicyValueNet:
 
     def _build_input_network(self):
       model = self.transpose_input_state
-      model = self._conv2(model)
-      model = self._batch_norm(model)
+      model = self._conv2(model, filters=32)
+      #model = self._batch_norm(model)
       model = tf.nn.relu(model)
       return model
 
@@ -77,28 +78,30 @@ class PolicyValueNet:
       model = self.Input_Network
       for i in range(self.num_of_res_layer):
         first_input = model
-        model = self._conv2(model)
-        model = self._batch_norm(model)
+        model = self._conv2(model, filters=64)
+        #model = self._batch_norm(model)
         model = tf.nn.relu(model)
-        model = self._conv2(model)
-        model = self._batch_norm(model)
-        model = tf.nn.relu(model + first_input)
+        model = self._conv2(model, filters=128)
+        #model = self._batch_norm(model)
+        model = tf.nn.relu(model)
       return model
 
     def _build_policy_network(self):
       model = self._conv2(self.Common_Network, filters=2, kernel_size=1)
-      model = self._batch_norm(model, center=False, scale=False)
+      #model = self._batch_norm(model, center=False, scale=False)
       model = tf.nn.relu(model)
       model = tf.reshape(model, [-1, 2 * self.width * self.height])
-      self.logits = tf.layers.dense(model, self.width * self.height)
-      model = tf.nn.softmax(self.logits)
+      #self.logits = tf.layers.dense(model, self.width * self.height)
+      #model = tf.nn.softmax(self.logits)
+      model = tf.layers.dense(inputs=model, units=self.width*self.height,
+        activation=tf.nn.log_softmax)
       return model
 
     def _build_value_network(self):
         model = self._conv2(self.Common_Network, filters=1, kernel_size=1)
-        model = self._batch_norm(model, center=False, scale=False)
+        #model = self._batch_norm(model, center=False, scale=False)
         model = tf.nn.relu(model)
-        model = tf.reshape(model, [-1, self.width * self.height])
+        model = tf.reshape(model, [-1, 1 * self.width * self.height])
         model = tf.layers.dense(model, 64)
         model = tf.nn.relu(model)
         model = tf.layers.dense(model, 1)
@@ -107,10 +110,14 @@ class PolicyValueNet:
         return model
 
     def _build_policy_entropy(self):
+      """
       ce = tf.nn.softmax_cross_entropy_with_logits_v2(
               logits=self.logits, labels=tf.stop_gradient(self.input_action)) * \
         self.policy_entropy_weight
-      return tf.reduce_mean(ce)
+      """
+      ce = tf.negative(tf.reduce_mean(tf.reduce_sum(
+        tf.multiply(self.input_action, self.Policy_Network), 1)))
+      return ce #tf.reduce_mean(ce)
 
     def _build_value_mse(self):
       return tf.losses.mean_squared_error(self.input_value,
@@ -134,7 +141,7 @@ class PolicyValueNet:
       action_probs, value = self.session.run(
           [self.Policy_Network, self.Value_Network], 
           feed_dict = {self.input_state : [state]})
-      return action_probs[0], value
+      return np.exp(action_probs[0]), value
 
     def train(self, state_batch, action_batch, value_batch, step, 
                 learning_rate):
