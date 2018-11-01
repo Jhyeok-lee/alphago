@@ -37,5 +37,9 @@ class Game:
 		values = np.zeros(len(current_players))
 		values[np.array(current_players) == winner] = 1.0
 		values[np.array(current_players) != winner] = -1.0
+		
+		for i in range(0, len(values)):
+			values[len(values)-1-i] = values[len(values)-1-i] * pow(0.95, i)
+
 
 		return winner, game_states, action_probs, values
