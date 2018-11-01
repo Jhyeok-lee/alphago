@@ -16,15 +16,15 @@ class Agent(object):
 		self.height = 6
 		self.max_state_size = 3
 		self.win_contition = 4
-		self.batch_size = 128
-		self.max_game_count = 300000
-		self.max_data_size = 1280
-		self.max_training_loop_count = 2
+		self.batch_size = 512
+		self.max_game_count = 1500
+		self.max_data_size = 10240
+		self.max_training_loop_count = 5
 		self.learning_rate = 0.001
 		self.simulation_count = 400
-		self.value_head_weight = 0.01
+		self.value_head_weight = 1.0
 		self.policy_entropy_weight = 1.0
-		self.c_puct = 0.96
+		self.c_puct = 5
 
 	def train(self, start_step=0):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
@@ -32,7 +32,8 @@ class Agent(object):
 				model_path=None, train_mode=True)
 		state =  State(self.height, self.width, self.max_state_size, self.win_contition)
 		game = Game(state)
-		player = MCTS(model.policy_value, self.simulation_count)
+		player = MCTS(model.policy_value, self.simulation_count,
+			c_puct=self.c_puct)
 		data_queue = deque(maxlen=self.max_data_size)
 		prev_loss = 10
 		prev_entropy = 10
@@ -64,8 +65,11 @@ class Agent(object):
 			loss = 10
 			new_data_count += len(augmented_states)
 
+			"""
 			if len(data_queue) == self.max_data_size and \
 					new_data_count >= self.batch_size:
+			"""
+			if len(data_queue) >= self.batch_size:
 				loss, value_mse, policy_entropy = 0.0, 0.0, 0.0
 				mini_batch = random.sample(data_queue, self.batch_size)
 				states_batch = [d[0] for d in mini_batch]
@@ -80,16 +84,18 @@ class Agent(object):
 				if training_step % 100 == 0:
 					model.save_model("data/model", training_step)
 				#data_queue.clear()
-				if prev_entropy-0.0999 > policy_entropy:
+				if prev_entropy > policy_entropy:
 					prev_entropy = policy_entropy
 					print("game_count %d, training_step %d" %(game_count, training_step))
 					print("loss %.5f, value %.5f, entropy %.5f" %(loss,value_mse,policy_entropy))
 					model.save_model("data/best_model", None)
 
 			"""
-			if (training_step+1) == 100:
+			if (training_step+1) == 40:
 				self.learning_rate *= 0.1
+			"""
 
+			"""
 			if (training_step+1) == 300:
 				self.learning_rate *= 0.1
 			"""
