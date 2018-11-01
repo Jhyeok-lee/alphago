@@ -49,7 +49,7 @@ class Node(object):
 class MCTS(object):
 
 	def __init__(self, policy_value, simulation_count=400,
-			exploration=True, c_puct=0.96):
+			exploration=True, c_puct=5):
 		self.root = Node(None, 1.0, c_puct)
 		self.policy_value = policy_value
 		self.simulation_count = simulation_count
@@ -86,8 +86,8 @@ class MCTS(object):
 		actions_to_visits = [(action, node.N)
 					for action, node in self.root.children.items()]
 		actions, visits = zip(*actions_to_visits)
-		action_probs = visits / np.sum(visits)
-
+		#action_probs = visits / np.sum(visits)
+		action_probs = self.softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
 		best_idx = np.argmax(visits)
 		best_action = actions[best_idx]
 
