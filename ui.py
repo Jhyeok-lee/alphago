@@ -11,7 +11,7 @@ BLACK = (0, 0, 0)
 BOARD_SIZE = (HIGHT*R*5, HIGHT*R*5)
 MID = int(HIGHT*R*5/3)
 gibo = []
-with open('66_2/data/gibo.pickle', 'rb') as f:
+with open('data/gibo.pickle', 'rb') as f:
     gibo = pickle.load(f)
 pygame.init()
 pygame.display.set_caption('aa')
