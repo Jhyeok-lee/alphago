@@ -28,7 +28,6 @@ class Game:
 
 			winner = self.state.do_action(action)
 			if show:
-				print("")
 				print(self.state.get_game_state())
 				print("Turn per secs : ", np.mean(time_per_turn))
 			if winner != -1:
@@ -39,7 +38,6 @@ class Game:
 		values[np.array(current_players) != winner] = -1.0
 		
 		for i in range(0, len(values)):
-			values[len(values)-1-i] = values[len(values)-1-i] * pow(0.95, i)
-
-
+			values[len(values)-1-i] = values[len(values)-1-i] * pow(0.9, i)
+		
 		return winner, game_states, action_probs, values

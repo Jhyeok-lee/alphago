@@ -87,10 +87,10 @@ class PolicyValueNet:
       return model
 
     def _build_policy_network(self):
-      model = self._conv2(self.Common_Network, filters=2, kernel_size=1)
+      model = self._conv2(self.Common_Network, filters=4, kernel_size=1)
       #model = self._batch_norm(model, center=False, scale=False)
       model = tf.nn.relu(model)
-      model = tf.reshape(model, [-1, 2 * self.width * self.height])
+      model = tf.reshape(model, [-1, 4 * self.width * self.height])
       #self.logits = tf.layers.dense(model, self.width * self.height)
       #model = tf.nn.softmax(self.logits)
       model = tf.layers.dense(inputs=model, units=self.width*self.height,
@@ -98,10 +98,10 @@ class PolicyValueNet:
       return model
 
     def _build_value_network(self):
-        model = self._conv2(self.Common_Network, filters=1, kernel_size=1)
+        model = self._conv2(self.Common_Network, filters=2, kernel_size=1)
         #model = self._batch_norm(model, center=False, scale=False)
         model = tf.nn.relu(model)
-        model = tf.reshape(model, [-1, 1 * self.width * self.height])
+        model = tf.reshape(model, [-1, 2 * self.width * self.height])
         model = tf.layers.dense(model, 64)
         model = tf.nn.relu(model)
         model = tf.layers.dense(model, 1)

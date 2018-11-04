@@ -16,9 +16,9 @@ class Agent(object):
 		self.height = 6
 		self.max_state_size = 3
 		self.win_contition = 4
-		self.batch_size = 512
-		self.max_game_count = 1500
-		self.max_data_size = 10240
+		self.batch_size = 256
+		self.max_game_count = 150000
+		self.max_data_size = 5120
 		self.max_training_loop_count = 5
 		self.learning_rate = 0.001
 		self.simulation_count = 400
@@ -37,6 +37,7 @@ class Agent(object):
 		data_queue = deque(maxlen=self.max_data_size)
 		prev_loss = 10
 		prev_entropy = 10
+		prev_value = 10
 
 		game_count = 0
 		training_step = 0
@@ -62,14 +63,13 @@ class Agent(object):
 			play_data = list(zip(augmented_states, augmented_actions,
 				augmented_values))[:]
 			data_queue.extend(play_data)
-			loss = 10
 			new_data_count += len(augmented_states)
 
 			"""
 			if len(data_queue) == self.max_data_size and \
 					new_data_count >= self.batch_size:
 			"""
-			if len(data_queue) >= self.batch_size:
+			if len(data_queue) >= self.max_data_size:
 				loss, value_mse, policy_entropy = 0.0, 0.0, 0.0
 				mini_batch = random.sample(data_queue, self.batch_size)
 				states_batch = [d[0] for d in mini_batch]
@@ -83,9 +83,11 @@ class Agent(object):
 				new_data_count = 0
 				if training_step % 100 == 0:
 					model.save_model("data/model", training_step)
-				#data_queue.clear()
-				if prev_entropy > policy_entropy:
+				data_queue.clear()
+				if prev_entropy > policy_entropy and \
+					prev_value > value_mse:
 					prev_entropy = policy_entropy
+					prev_value = value_mse
 					print("game_count %d, training_step %d" %(game_count, training_step))
 					print("loss %.5f, value %.5f, entropy %.5f" %(loss,value_mse,policy_entropy))
 					model.save_model("data/best_model", None)
