@@ -25,6 +25,7 @@ class Agent(object):
 		self.value_head_weight = 1.0
 		self.policy_entropy_weight = 1.0
 		self.c_puct = 5
+		self.vailidation_test_count = 100
 
 	def train(self, start_step=0):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
@@ -32,7 +33,9 @@ class Agent(object):
 				model_path=None, train_mode=True)
 		state =  State(self.height, self.width, self.max_state_size, self.win_contition)
 		game = Game(state)
-		player = MCTS(model.policy_value, self.simulation_count,
+		current_player = MCTS(model.policy_value, self.simulation_count,
+			c_puct=self.c_puct)
+		best_player = MCTS(model.best_policy_value, self.simulation_count,
 			c_puct=self.c_puct)
 		data_queue = deque(maxlen=self.max_data_size)
 		prev_loss = 10
@@ -42,67 +45,75 @@ class Agent(object):
 		game_count = 0
 		training_step = 0
 		new_data_count = 0
-		while game_count < self.max_game_count:
-			winner, game_states, action_probs, values = \
-				game.play(player, player)
+
+		while True:
+			game_count += 1
+			
+			# collecting data
+			if len(data_queue) == 0:
+				print("start collecting data")
+			winner, game_states, action_probs, values = None, None, None, None
+			if game_count%2 == 0:
+				winner, game_states, action_probs, values = \
+					game.play(best_player, best_player)
+			else:
+				winner, game_states, action_probs, values = \
+					game.play(best_player, best_player)
 
 			if winner == 2:
 				continue
-			"""
-			print("")
-			print(state.get_game_state())
-			if winner == 1:
-				print("Black Win")
-			else:
-				print("White Win")
-			"""
-
 
 			augmented_states, augmented_actions, augmented_values = \
 				self.augmenting_data(game_states, action_probs, values)
 			play_data = list(zip(augmented_states, augmented_actions,
 				augmented_values))[:]
 			data_queue.extend(play_data)
-			new_data_count += len(augmented_states)
 
-			"""
-			if len(data_queue) == self.max_data_size and \
-					new_data_count >= self.batch_size:
-			"""
-			if len(data_queue) >= self.max_data_size:
-				loss, value_mse, policy_entropy = 0.0, 0.0, 0.0
-				mini_batch = random.sample(data_queue, self.batch_size)
-				states_batch = [d[0] for d in mini_batch]
-				actions_batch = [d[1] for d in mini_batch]
-				values_batch = [d[2] for d in mini_batch]
-				for i in range(self.max_training_loop_count):
-					loss, value_mse, policy_entropy = \
-						model.train(states_batch, actions_batch, values_batch,
-							training_step, self.learning_rate)
-					training_step += 1
-				new_data_count = 0
-				if training_step % 100 == 0:
-					model.save_model("data/model", training_step)
-				data_queue.clear()
-				if prev_entropy > policy_entropy and \
-					prev_value > value_mse:
-					prev_entropy = policy_entropy
-					prev_value = value_mse
-					print("game_count %d, training_step %d" %(game_count, training_step))
-					print("loss %.5f, value %.5f, entropy %.5f" %(loss,value_mse,policy_entropy))
-					model.save_model("data/best_model", None)
+			if len(data_queue) < self.max_data_size:
+				continue
 
-			"""
-			if (training_step+1) == 40:
-				self.learning_rate *= 0.1
-			"""
+			# training
+			print("%d games : end collecting data, start training" %(game_count))
+			loss, value_mse, policy_entropy = 0.0, 0.0, 0.0
+			mini_batch = random.sample(data_queue, self.batch_size)
+			states_batch = [d[0] for d in mini_batch]
+			actions_batch = [d[1] for d in mini_batch]
+			values_batch = [d[2] for d in mini_batch]
+			for i in range(self.max_training_loop_count):
+				loss, value_mse, policy_entropy = \
+					model.train(states_batch, actions_batch, values_batch,
+						training_step, self.learning_rate)
+				training_step += 1
+			data_queue.clear()
+			print("end training : step %d, loss %f, value_mse %f, policy_entropy %f"
+				%(training_step, loss, value_mse, policy_entropy))
+			model.save_model("data/model", training_step)
 
-			"""
-			if (training_step+1) == 300:
-				self.learning_rate *= 0.1
-			"""
-
-			game_count += 1
+			# vailidation test
+			print("start validation test")
+			current_win = 0
+			best_win = 0
+			for i in range(self.vailidation_test_count):
+				if i%2 == 0:
+					winner, game_states, action_probs, values = \
+						game.play(current_player, best_player)
+					if winner == 1:
+						best_win += 1
+					else:
+						current_win += 1
+				else:
+					winner, game_states, action_probs, values = \
+						game.play(best_player, current_player)
+					if winner == 0:
+						best_win += 1
+					else:
+						current_win += 1
+			print("end validation test : current_win %d, best_win %d"
+				%(current_win, best_win))
+			if best_win > current_win:
+				print("new best model")
+				model.update_best_model()
+				model.save_model("data/best_model")
 
 	def make_init_data_queue(self):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,

@@ -22,10 +22,14 @@ class PolicyValueNet:
         self.input_value = tf.placeholder(tf.float32, [None])
         self.learning_rate = tf.placeholder(tf.float32)
 
-        self.Input_Network = self._build_input_network()
-        self.Common_Network = self._build_common_network()
-        self.Policy_Network = self._build_policy_network()
-        self.Value_Network = self._build_value_network()
+        self.Input_Network = self._build_input_network('current')
+        self.Common_Network = self._build_common_network('current')
+        self.Policy_Network = self._build_policy_network('current')
+        self.Value_Network = self._build_value_network('current')
+        self.Best_Input_Network = self._build_input_network('best')
+        self.Best_Common_Network = self._build_common_network('best')
+        self.Best_Policy_Network = self._build_policy_network('best')
+        self.Best_Value_Network = self._build_value_network('best')
         self.policy_entropy = self._build_policy_entropy()
         self.value_mse = self._build_value_mse()
         self.train_op = self._build_train_op()
@@ -47,14 +51,15 @@ class PolicyValueNet:
 
     def _conv2(self, inputs, filters=64, kernel_size=3,
                              padding="same", data_format="channels_last",
-                             use_bias=False):
+                             use_bias=False, name=None):
       return tf.layers.conv2d(inputs=inputs,
                                  filters=filters,
                                  kernel_size=kernel_size,
                                  padding=padding,
                                  data_format=data_format,
                                  use_bias=use_bias,
-                                 kernel_initializer=self.initializer)
+                                 kernel_initializer=self.initializer,
+                                 name=name)
 
     def _batch_norm(self, inputs, axis=-1, momentum=0.95, epsilon=1e-5,
                           center=True, scale=True, fused=True):
@@ -67,47 +72,65 @@ class PolicyValueNet:
                                             fused=fused,
                                             training=self.train_mode)
 
-    def _build_input_network(self):
-      model = self.transpose_input_state
-      model = self._conv2(model, filters=32)
-      #model = self._batch_norm(model)
-      model = tf.nn.relu(model)
-      return model
-
-    def _build_common_network(self):
-      model = self.Input_Network
-      for i in range(self.num_of_res_layer):
-        first_input = model
-        model = self._conv2(model, filters=64)
-        #model = self._batch_norm(model)
-        model = tf.nn.relu(model)
-        model = self._conv2(model, filters=128)
+    def _build_input_network(self, name):
+      with tf.variable_scope(name):
+        model = self.transpose_input_state
+        model = self._conv2(model, name="input_conv")
         #model = self._batch_norm(model)
         model = tf.nn.relu(model)
       return model
 
-    def _build_policy_network(self):
-      model = self._conv2(self.Common_Network, filters=4, kernel_size=1)
-      #model = self._batch_norm(model, center=False, scale=False)
-      model = tf.nn.relu(model)
-      model = tf.reshape(model, [-1, 4 * self.width * self.height])
-      #self.logits = tf.layers.dense(model, self.width * self.height)
-      #model = tf.nn.softmax(self.logits)
-      model = tf.layers.dense(inputs=model, units=self.width*self.height,
-        activation=tf.nn.log_softmax)
+    def _build_common_network(self, name):
+      with tf.variable_scope(name):
+        model = self.Input_Network
+        for i in range(self.num_of_res_layer):
+          first_input = model
+          model = self._conv2(model, name="common_conv" + str(i*2+1))
+          #model = self._batch_norm(model)
+          model = tf.nn.relu(model)
+          model = self._conv2(model, name="common_conv" + str(i*2+2))
+          #model = self._batch_norm(model)
+          model = tf.nn.relu(model)
       return model
 
-    def _build_value_network(self):
-        model = self._conv2(self.Common_Network, filters=2, kernel_size=1)
+    def _build_policy_network(self, name):
+      with tf.variable_scope(name):
+        model = self._conv2(self.Common_Network, filters=2, kernel_size=1,
+          name="policy_conv")
         #model = self._batch_norm(model, center=False, scale=False)
         model = tf.nn.relu(model)
         model = tf.reshape(model, [-1, 2 * self.width * self.height])
-        model = tf.layers.dense(model, 64)
+        #self.logits = tf.layers.dense(model, self.width * self.height)
+        #model = tf.nn.softmax(self.logits)
+        model = tf.layers.dense(inputs=model, units=self.width*self.height,
+          activation=tf.nn.log_softmax, name="policy_dense")
+      return model
+
+    def _build_value_network(self, name):
+      with tf.variable_scope(name):
+        model = self._conv2(self.Common_Network, filters=1, kernel_size=1,
+          name="value_conv")
+        #model = self._batch_norm(model, center=False, scale=False)
         model = tf.nn.relu(model)
-        model = tf.layers.dense(model, 1)
+        model = tf.reshape(model, [-1, 1 * self.width * self.height])
+        model = tf.layers.dense(model, 64, name="value_dense1")
+        model = tf.nn.relu(model)
+        model = tf.layers.dense(model, 1, name="value_dense2")
         model = tf.reshape(model, [-1])
         model = tf.nn.tanh(model)
         return model
+
+    def update_best_model(self):
+      copy_op = []
+      current_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+        scope='current')
+      best_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+        scope='best')
+
+      for current_var, best_var in zip(current_vars, best_vars):
+        copy_op.append(best_var.assign(current_var.value()))
+
+      self.session.run(copy_op)
 
     def _build_policy_entropy(self):
       """
@@ -140,6 +163,12 @@ class PolicyValueNet:
     def policy_value(self, state):
       action_probs, value = self.session.run(
           [self.Policy_Network, self.Value_Network], 
+          feed_dict = {self.input_state : [state]})
+      return np.exp(action_probs[0]), value
+
+    def best_policy_value(self, state):
+      action_probs, value = self.session.run(
+          [self.Best_Policy_Network, self.Best_Value_Network], 
           feed_dict = {self.input_state : [state]})
       return np.exp(action_probs[0]), value
 
