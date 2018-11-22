@@ -113,7 +113,7 @@ class Agent(object):
 			if best_win > current_win:
 				print("new best model")
 				model.update_best_model()
-				model.save_model("data/best_model")
+				model.save_model("data/best_model", None)
 
 	def make_init_data_queue(self):
 		model = PolicyValueNet(self.height, self.width, self.max_state_size,
