@@ -22,6 +22,39 @@
 - Validation Test
 	- Training이 끝나고 Best Model과 Current Model간의 대결 테스트
 
+#### Model
+![model](https://github.com/Jhyeok-lee/alphago/blob/develop/img/model.png)
+- Input Layer:
+	- 64개의 채널의 3x3 커널크기를 가진 Convolution Layer
+	- Batch Normalization
+	- A rectifier linear unit
+
+- Residual Block:
+	- 64개의 채널의 3x3 커널크기를 가진 Convolution Layer
+	- Batch Normalization
+	- A rectifier linear unit
+	- 64개의 채널의 3x3 커널크기를 가진 Convolution Layer
+	- Batch Normalization
+	- Residual Layer의 Input 추가
+	- A rectifier linear unit
+
+- Policy Head
+	- 2개의 채널의 1x1 커널크기를 가진 Convolution Layer
+	- Batch Normalization
+	- A rectifier linear unit
+	- 보드의 너비 X 높이 개의 output을 가지는 Fully Connected Layer
+
+- Value Head
+	- 1개의 채널의 1x1 커널크기를 가진 Convolution Layer
+	- Batch Normalization
+	- A rectifier linear unit
+	- 64 개의 output을 가지는 Fully Connected Layer
+	- A rectifier linear unit
+	- [-1, 1]의 결과를 output을 가지는 tanh
+
+- Loss Function
+![loss](https://github.com/Jhyeok-lee/alphago/blob/develop/img/cost_function.png)
+
 ## 프로젝트 일지
 [여기로](https://github.com/Jhyeok-lee/alphago/blob/develop/memo.md)
 
