@@ -61,3 +61,8 @@
 ## 6x6 4목 2번째 시도
 ![66_2](https://github.com/Jhyeok-lee/alphago/blob/develop/img/66_2.gif)
 
+## Reference
+- [D. Silver et al, "Mastering the game of Go with deep neural networks and tree search", Nature, 2016](https://www.nature.com/articles/nature24270)
+- [D. Silver et al, "Mastering the Game of Go without Human Knowledge", Nature, 2017](https://deepmind.com/documents/119/agz_unformatted_nature.pdf)
+- [A simple Alphago Zero Tutorial](https://web.stanford.edu/~surag/posts/alphazero.html)https://web.stanford.edu/~surag/posts/alphazero.html
+- [minigo - Tensorflow Team](https://github.com/tensorflow/minigo)
